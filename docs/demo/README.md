@@ -23,7 +23,7 @@ When does a task become overdue?
 
 Step by step:
 
-1. Read `AGENTS.md`, which points to the repository map.
+1. Read `CLAUDE.md`, which points to the repository map.
 2. Open the relevant product contract, `docs/product/tasks.md`.
 3. Answer from that rule and cite the file.
 4. Do not bootstrap a database, create an intake, write a trace, or modify the

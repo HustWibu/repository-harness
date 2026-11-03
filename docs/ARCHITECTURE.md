@@ -1,7 +1,7 @@
 # Architecture
 
-`repository-harness` has one Rust binary, `harness`, plus thin Bash and
-PowerShell bootstraps.
+`repository-harness` has one Rust binary, `harness`, plus a thin Bash
+bootstrap. It supports Linux and macOS only (decision 0032).
 
 ## Product Boundary
 

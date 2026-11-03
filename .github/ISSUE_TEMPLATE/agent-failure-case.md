@@ -16,7 +16,7 @@ labels: agent-failure, needs-triage
 
 ## Which harness artifact could help?
 
-- [ ] `AGENTS.md`
+- [ ] `CLAUDE.md`
 - [ ] Product contract
 - [ ] Story packet
 - [ ] Validation matrix
@@ -28,8 +28,6 @@ labels: agent-failure, needs-triage
 ## Tool used
 
 - [ ] Claude Code
-- [ ] Codex
-- [ ] Cursor
 - [ ] Other:
 
 ## Suggested improvement

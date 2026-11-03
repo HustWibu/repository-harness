@@ -17,8 +17,10 @@ and build trust through executable or observable evidence.
 
 ## Installed Core
 
-Core supplies a compact entrypoint and repository map, context about authority,
-capabilities and evidence, optional templates, and explicit-only skills.
+Core supplies a compact `CLAUDE.md` entrypoint and repository map, context
+about authority, capabilities and evidence, optional templates, and
+explicit-only Claude Code skills under `.claude/skills/`. Claude Code is the
+only supported agent host (decision 0031).
 It supplies no fabricated product domains, application commands, credentials,
 task scheduler, database, or workflow engine.
 

@@ -747,7 +747,7 @@ mod tests {
         CoreDistribution {
             version: version.to_owned(),
             files: vec![DistributionFile {
-                path: RelativePath::parse("AGENTS.md").unwrap(),
+                path: RelativePath::parse("CLAUDE.md").unwrap(),
                 content: content.to_vec(),
                 hash: ContentHash::parse("a".repeat(64)).unwrap(),
             }],
@@ -758,7 +758,7 @@ mod tests {
     fn install_adopts_existing_files_without_overwriting_them() {
         let state = StateFixture::default();
         state.files.borrow_mut().insert(
-            RelativePath::parse("AGENTS.md").unwrap(),
+            RelativePath::parse("CLAUDE.md").unwrap(),
             b"consumer".to_vec(),
         );
         let app = CoreApplication::new(
@@ -774,7 +774,7 @@ mod tests {
     #[test]
     fn update_stops_when_local_and_upstream_changes_overlap() {
         let state = StateFixture::default();
-        let path = RelativePath::parse("AGENTS.md").unwrap();
+        let path = RelativePath::parse("CLAUDE.md").unwrap();
         state
             .files
             .borrow_mut()

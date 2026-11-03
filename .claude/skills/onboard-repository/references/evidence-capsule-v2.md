@@ -98,7 +98,7 @@ Minimal input shape:
   "hunks": [
     {
       "id": "H1",
-      "destination": "AGENTS.md",
+      "destination": "CLAUDE.md",
       "after_text": "the complete proposed UTF-8 destination, ending with LF\n",
       "unknowns": []
     }
@@ -123,7 +123,7 @@ partial replacement as though it were a complete file.
     "branch": "branch-name"
   },
   "producer_skill": {
-    "path": ".agents/skills/onboard-repository/SKILL.md",
+    "path": ".claude/skills/onboard-repository/SKILL.md",
     "sha256": "SHA-256 of the complete pinned skill blob"
   },
   "boundary": [
@@ -181,7 +181,7 @@ partial replacement as though it were a complete file.
   "hunks": [
     {
       "id": "H1",
-      "destination": "AGENTS.md",
+      "destination": "CLAUDE.md",
       "destination_before_sha256": "SHA-256 of the complete pinned file",
       "destination_after_sha256": "SHA-256 of the complete in-memory patched file",
       "patch_sha256": "SHA-256 of the marked diff bytes plus final LF",

@@ -13,7 +13,7 @@ labels: example, needs-triage
 
 ## Which files mattered most?
 
-- [ ] `AGENTS.md`
+- [ ] `CLAUDE.md`
 - [ ] `docs/HARNESS.md`
 - [ ] `docs/WORKFLOW.md`
 - [ ] `docs/ARCHITECTURE.md`
@@ -23,8 +23,6 @@ labels: example, needs-triage
 ## Which agent/tool did you use?
 
 - [ ] Claude Code
-- [ ] Codex
-- [ ] Cursor
 - [ ] Other:
 
 ## What worked well?

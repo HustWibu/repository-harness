@@ -33,9 +33,9 @@ fn cli_installs_reports_and_diagnoses_a_fresh_core() {
     let output: serde_json::Value = serde_json::from_slice(&install.stdout).unwrap();
     assert_eq!(output["operation"], "install");
     assert_eq!(output["applied"], true);
-    assert!(root.path().join("AGENTS.md").is_file());
+    assert!(root.path().join("CLAUDE.md").is_file());
     assert!(root.path().join(".harness-core/manifest.json").is_file());
-    assert!(root.path().join(".harness-core/base/AGENTS.md").is_file());
+    assert!(root.path().join(".harness-core/base/CLAUDE.md").is_file());
     assert!(!root.path().join("harness.db").exists());
 
     let status = Command::new(binary)
@@ -62,9 +62,9 @@ fn cli_installs_reports_and_diagnoses_a_fresh_core() {
 #[test]
 fn install_migrates_an_existing_core_without_overwriting_consumer_content() {
     let root = tempfile::tempdir().unwrap();
-    let agents = root.path().join("AGENTS.md");
-    fs::write(&agents, "consumer-owned instructions\n").unwrap();
-    let before = fs::read(&agents).unwrap();
+    let claude = root.path().join("CLAUDE.md");
+    fs::write(&claude, "consumer-owned instructions\n").unwrap();
+    let before = fs::read(&claude).unwrap();
     let output = Command::new(env!("CARGO_BIN_EXE_harness"))
         .args(["install", "--directory"])
         .arg(root.path())
@@ -72,14 +72,14 @@ fn install_migrates_an_existing_core_without_overwriting_consumer_content() {
         .output()
         .unwrap();
     assert!(output.status.success());
-    assert_eq!(fs::read(&agents).unwrap(), before);
+    assert_eq!(fs::read(&claude).unwrap(), before);
     let output: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
     assert_eq!(
         output["changes"]
             .as_array()
             .unwrap()
             .iter()
-            .find(|change| change["path"] == "AGENTS.md")
+            .find(|change| change["path"] == "CLAUDE.md")
             .unwrap()["kind"],
         "adopt"
     );

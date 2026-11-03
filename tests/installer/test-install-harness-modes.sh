@@ -42,31 +42,33 @@ grep -Fq 'Harness profile: core' "$temp/fresh.out"
 [[ -f "$fresh/.harness-core/manifest.json" ]]
 [[ -f "$fresh/docs/WORKFLOW.md" ]]
 [[ -f "$fresh/docs/patterns/encoding-invariants.md" ]]
-[[ -f "$fresh/.agents/skills/encode-invariant/SKILL.md" ]]
-cmp -s <(extract_block "$fresh/AGENTS.md") "$root/scripts/agent-harness-block.md"
-grep -Fq 'Only invoke a Harness skill when the user explicitly requests it.' "$fresh/AGENTS.md"
+[[ -f "$fresh/.claude/skills/encode-invariant/SKILL.md" ]]
+cmp -s <(extract_block "$fresh/CLAUDE.md") "$root/scripts/claude-harness-block.md"
+grep -Fq 'Only invoke a Harness skill when the user explicitly requests it.' "$fresh/CLAUDE.md"
+[[ ! -e "$fresh/AGENTS.md" && ! -e "$fresh/.agents" ]]
+[[ -z "$(find "$fresh/.claude" -name openai.yaml -print -quit)" ]]
 grep -Fq '## Missing Capabilities' "$fresh/docs/WORKFLOW.md"
 grep -Fq 'Positive proof' "$fresh/docs/patterns/encoding-invariants.md"
 grep -Fq 'Negative proof' "$fresh/docs/patterns/encoding-invariants.md"
 grep -Fq 'Use only when the user explicitly invokes' \
-  "$fresh/.agents/skills/encode-invariant/SKILL.md"
+  "$fresh/.claude/skills/encode-invariant/SKILL.md"
 grep -Fq "Reuse the repository's existing test, build, task, lint, scan, or validation" \
-  "$fresh/.agents/skills/encode-invariant/SKILL.md"
+  "$fresh/.claude/skills/encode-invariant/SKILL.md"
 grep -Fq 'Choose the lowest deterministic layer that sees the complete accepted' \
-  "$fresh/.agents/skills/encode-invariant/SKILL.md"
+  "$fresh/.claude/skills/encode-invariant/SKILL.md"
 grep -Fq 'authority source, and a concrete compliant next action' \
-  "$fresh/.agents/skills/encode-invariant/SKILL.md"
+  "$fresh/.claude/skills/encode-invariant/SKILL.md"
 for level in \
   'local validation command and observed result' \
   'optional hook availability, if any' \
   'CI invocation discovered or absent' \
   'branch-protection enforcement verified or unverified'; do
-  grep -Fq "$level" "$fresh/.agents/skills/encode-invariant/SKILL.md"
+  grep -Fq "$level" "$fresh/.claude/skills/encode-invariant/SKILL.md"
 done
 grep -Fq 'Compare documented invariants with executable checks' \
-  "$fresh/.agents/skills/onboard-repository/SKILL.md"
-grep -Fq 'allow_implicit_invocation: false' \
-  "$fresh/.agents/skills/encode-invariant/agents/openai.yaml"
+  "$fresh/.claude/skills/onboard-repository/SKILL.md"
+grep -Fxq 'disable-model-invocation: true' \
+  "$fresh/.claude/skills/encode-invariant/SKILL.md"
 grep -Fxq 'scripts/bin/harness' "$fresh/.gitignore"
 for legacy in \
   scripts/bin/harness-cli \
@@ -78,34 +80,45 @@ for legacy in \
   [[ ! -e "$fresh/$legacy" ]]
 done
 ! grep -Fxq 'harness.db' "$fresh/.gitignore"
-[[ ! -e "$fresh/.agents/skills/engineering-wisdom" ]]
+[[ ! -e "$fresh/.claude/skills/engineering-wisdom" ]]
 
 # Engineering wisdom remains explicit-only.
 wisdom="$temp/wisdom"
 install --directory "$wisdom" --with-engineering-wisdom --yes >"$temp/wisdom.out"
 grep -Fq 'Engineering wisdom: included (explicit opt-in)' "$temp/wisdom.out"
-[[ -f "$wisdom/.agents/skills/engineering-wisdom/SKILL.md" ]]
-grep -Fq 'allow_implicit_invocation: false' \
-  "$wisdom/.agents/skills/engineering-wisdom/agents/openai.yaml"
+[[ -f "$wisdom/.claude/skills/engineering-wisdom/SKILL.md" ]]
+grep -Fxq 'disable-model-invocation: true' \
+  "$wisdom/.claude/skills/engineering-wisdom/SKILL.md"
 
 # Force still overwrites an opted-in advisory file and backs up its old bytes.
 force="$temp/force"
-mkdir -p "$force/.agents/skills/engineering-wisdom"
-printf 'consumer mutation\n' >"$force/.agents/skills/engineering-wisdom/SKILL.md"
+mkdir -p "$force/.claude/skills/engineering-wisdom"
+printf 'consumer mutation\n' >"$force/.claude/skills/engineering-wisdom/SKILL.md"
 install --directory "$force" --with-engineering-wisdom --force --yes >"$temp/force.out"
-! grep -Fq 'consumer mutation' "$force/.agents/skills/engineering-wisdom/SKILL.md"
-force_backup=$(find "$force/.harness-backup" -path '*/.agents/skills/engineering-wisdom/SKILL.md' -type f | head -n 1)
+! grep -Fq 'consumer mutation' "$force/.claude/skills/engineering-wisdom/SKILL.md"
+force_backup=$(find "$force/.harness-backup" -path '*/.claude/skills/engineering-wisdom/SKILL.md' -type f | head -n 1)
 grep -Fxq 'consumer mutation' "$force_backup"
 
-# Claude shim appends one canonical block, keeps local text, and backs it up.
+# An existing CLAUDE.md is adopted untouched; without the refresh flag the
+# installer only points out the missing block.
+note="$temp/note"
+mkdir -p "$note"
+printf '# Local Claude Rules\n' >"$note/CLAUDE.md"
+install --directory "$note" --merge --yes >"$temp/note.out"
+grep -Fxq '# Local Claude Rules' "$note/CLAUDE.md"
+! grep -Fq '<!-- HARNESS:BEGIN -->' "$note/CLAUDE.md"
+grep -Fq 'CLAUDE.md has no Harness block; rerun with --refresh-claude-shim' "$temp/note.out"
+
+# The refresh flag appends one canonical block, keeps local text, and backs
+# up the exact prior file.
 claude="$temp/claude"
 mkdir -p "$claude"
 printf '# Local Claude Rules\n\nKeep this Claude-only rule.\n' >"$claude/CLAUDE.md"
 claude_before=$(shasum -a 256 "$claude/CLAUDE.md" | awk '{ print $1 }')
-install --directory "$claude" --claude --yes >"$temp/claude.out"
+install --directory "$claude" --merge --refresh-claude-shim --yes >"$temp/claude.out"
 grep -Fq 'Keep this Claude-only rule.' "$claude/CLAUDE.md"
 cmp -s <(extract_block "$claude/CLAUDE.md") "$root/scripts/claude-harness-block.md"
-[[ "$(grep -Fc '@AGENTS.md' "$claude/CLAUDE.md")" == 1 ]]
+[[ "$(grep -Fc '<!-- HARNESS:BEGIN -->' "$claude/CLAUDE.md")" == 1 ]]
 claude_backup=$(find "$claude/.harness-backup" -name CLAUDE.md -type f | head -n 1)
 [[ "$(shasum -a 256 "$claude_backup" | awk '{ print $1 }')" == "$claude_before" ]]
 
@@ -113,7 +126,8 @@ claude_backup=$(find "$claude/.harness-backup" -name CLAUDE.md -type f | head -n
 # files, a pre-existing database, or unrelated scripts.
 merge="$temp/merge"
 mkdir -p "$merge/docs/contracts" "$merge/scripts/schema" "$merge/scripts/bin"
-printf 'project agents\n' >"$merge/AGENTS.md"
+printf 'project claude\n' >"$merge/CLAUDE.md"
+printf 'legacy agents\n' >"$merge/AGENTS.md"
 printf 'project harness doc\n' >"$merge/docs/HARNESS.md"
 printf 'legacy contract\n' >"$merge/docs/contracts/harness-orchestration-v1.md"
 printf 'legacy bootstrap\n' >"$merge/scripts/bootstrap-harness.sh"
@@ -123,7 +137,8 @@ printf 'legacy database\n' >"$merge/harness.db"
 install --directory "$merge" --merge --yes >"$temp/merge.out"
 grep -Fq 'Continuing with merge.' "$temp/merge.out"
 [[ -f "$merge/docs/WORKFLOW.md" && -x "$merge/scripts/bin/harness" ]]
-grep -Fxq 'project agents' "$merge/AGENTS.md"
+grep -Fxq 'project claude' "$merge/CLAUDE.md"
+grep -Fxq 'legacy agents' "$merge/AGENTS.md"
 grep -Fxq 'legacy contract' "$merge/docs/contracts/harness-orchestration-v1.md"
 grep -Fxq 'legacy bootstrap' "$merge/scripts/bootstrap-harness.sh"
 grep -Fxq 'legacy schema' "$merge/scripts/schema/001.sql"
@@ -131,36 +146,36 @@ grep -Fxq 'legacy cli' "$merge/scripts/bin/harness-cli"
 grep -Fxq 'legacy database' "$merge/harness.db"
 ! grep -Fxq 'harness.db' "$merge/.gitignore"
 
-# Override owns AGENTS.md and docs only; scripts remain in place and replaced
+# Override owns CLAUDE.md and docs only; scripts remain in place and replaced
 # protected paths are recoverable from the backup.
 override="$temp/override"
 mkdir -p "$override/docs" "$override/scripts"
-printf 'old agents\n' >"$override/AGENTS.md"
+printf 'old claude\n' >"$override/CLAUDE.md"
 printf 'old docs\n' >"$override/docs/private.md"
 printf 'old scripts\n' >"$override/scripts/private.sh"
 install --directory "$override" --override --yes >"$temp/override.out"
 override_backup=$(find "$override/.harness-backup" -mindepth 1 -maxdepth 1 -type d | head -n 1)
-grep -Fxq 'old agents' "$override_backup/AGENTS.md"
+grep -Fxq 'old claude' "$override_backup/CLAUDE.md"
 grep -Fxq 'old docs' "$override_backup/docs/private.md"
 [[ ! -e "$override/docs/private.md" ]]
 grep -Fxq 'old scripts' "$override/scripts/private.sh"
 
-# Agent refresh replaces only the marked/legacy authority and backs up the
+# Claude refresh replaces only the marked/legacy authority and backs up the
 # exact prior file. Malformed markers still fail closed.
 shim="$temp/shim"
 mkdir -p "$shim/docs"
-printf 'local rule\n\n<!-- HARNESS:BEGIN -->\nstale\n<!-- HARNESS:END -->\n' >"$shim/AGENTS.md"
-shim_before=$(shasum -a 256 "$shim/AGENTS.md" | awk '{ print $1 }')
-install --directory "$shim" --merge --refresh-agent-shim --yes >"$temp/shim.out"
-grep -Fq 'local rule' "$shim/AGENTS.md"
-! grep -Fq 'stale' "$shim/AGENTS.md"
-shim_backup=$(find "$shim/.harness-backup" -name AGENTS.md -type f | head -n 1)
+printf 'local rule\n\n<!-- HARNESS:BEGIN -->\nstale\n<!-- HARNESS:END -->\n' >"$shim/CLAUDE.md"
+shim_before=$(shasum -a 256 "$shim/CLAUDE.md" | awk '{ print $1 }')
+install --directory "$shim" --merge --refresh-claude-shim --yes >"$temp/shim.out"
+grep -Fq 'local rule' "$shim/CLAUDE.md"
+! grep -Fq 'stale' "$shim/CLAUDE.md"
+shim_backup=$(find "$shim/.harness-backup" -name CLAUDE.md -type f | head -n 1)
 [[ "$(shasum -a 256 "$shim_backup" | awk '{ print $1 }')" == "$shim_before" ]]
 
 malformed="$temp/malformed"
 mkdir -p "$malformed/docs"
-printf 'custom\n<!-- HARNESS:BEGIN -->\nstale without end\n' >"$malformed/AGENTS.md"
-if install --directory "$malformed" --merge --refresh-agent-shim --yes >"$temp/malformed.out" 2>&1; then
+printf 'custom\n<!-- HARNESS:BEGIN -->\nstale without end\n' >"$malformed/CLAUDE.md"
+if install --directory "$malformed" --merge --refresh-claude-shim --yes >"$temp/malformed.out" 2>&1; then
   echo 'installer unexpectedly accepted malformed Harness markers' >&2
   exit 1
 fi
@@ -177,6 +192,9 @@ grep -Fq 'Harness profile: core' "$temp/dry.out"
 assert_rejected_flag --with-cli
 assert_rejected_flag --upgrade-cli
 assert_rejected_flag --ref
+# Removed host switches: CLAUDE.md is the only entrypoint.
+assert_rejected_flag --claude
+assert_rejected_flag --refresh-agent-shim
 
 # The core executable path still refuses symlink traversal.
 symlink_target="$temp/symlink-target"
@@ -258,12 +276,12 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 if [ "$continuing" -eq 1 ]; then
-  cp "$target/.harness-core/update/resolved/AGENTS.md" "$target/AGENTS.md"
+  cp "$target/.harness-core/update/resolved/CLAUDE.md" "$target/CLAUDE.md"
   rm -rf "$target/.harness-core/update"
   exit 0
 fi
 mkdir -p "$target/.harness-core/update/resolved"
-printf 'resolved content required\n' >"$target/.harness-core/update/resolved/AGENTS.md"
+printf 'resolved content required\n' >"$target/.harness-core/update/resolved/CLAUDE.md"
 printf '{"schema_version":2,"from_version":"0.1.3","to_version":"0.1.4","conflicts":[],"frozen_files":[]}\n' >"$target/.harness-core/update/session.json"
 exit 2
 EOF
@@ -275,10 +293,10 @@ if HARNESS_CORE_BINARY="$fake_candidate" \
 fi
 [[ "$(shasum -a 256 "$conflict/scripts/bin/harness" | awk '{ print $1 }')" == "$old_binary_hash" ]]
 [[ -x "$conflict/.harness-core/update-candidate/harness" ]]
-printf 'human-approved result\n' >"$conflict/.harness-core/update/resolved/AGENTS.md"
+printf 'human-approved result\n' >"$conflict/.harness-core/update/resolved/CLAUDE.md"
 HARNESS_CORE_BINARY="$fake_candidate" \
   "$installer" --directory "$conflict" --merge --yes >"$temp/core-continue.out"
-grep -Fxq 'human-approved result' "$conflict/AGENTS.md"
+grep -Fxq 'human-approved result' "$conflict/CLAUDE.md"
 cmp -s "$fake_candidate" "$conflict/scripts/bin/harness"
 [[ ! -e "$conflict/.harness-core/update" && ! -e "$conflict/.harness-core/update-candidate" ]]
 core_backup=$(find "$conflict/.harness-backup" -path '*/scripts/bin/harness' -type f | head -n 1)

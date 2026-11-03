@@ -309,7 +309,7 @@ mod tests {
 
     #[test]
     fn installation_state_requires_unique_paths_and_current_schema() {
-        let path = RelativePath::parse("AGENTS.md").unwrap();
+        let path = RelativePath::parse("CLAUDE.md").unwrap();
         let hash = ContentHash::parse("a".repeat(64)).unwrap();
         let baseline = BaselineFile {
             path,

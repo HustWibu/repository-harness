@@ -2,7 +2,6 @@
 set -euo pipefail
 
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
-agent_block="$root/scripts/agent-harness-block.md"
 claude_block="$root/scripts/claude-harness-block.md"
 workflow="$root/docs/WORKFLOW.md"
 
@@ -14,10 +13,17 @@ extract_block() {
   ' "$1"
 }
 
-cmp -s <(extract_block "$root/AGENTS.md") "$agent_block"
 cmp -s <(extract_block "$root/CLAUDE.md") "$claude_block"
 
-required_agent_text=(
+# Claude Code is the only supported host: no AGENTS.md entrypoint, no
+# .agents/ skill tree, and no Codex skill metadata anywhere in the payload.
+[[ ! -e "$root/AGENTS.md" && ! -e "$root/.agents" ]]
+[[ ! -e "$root/scripts/agent-harness-block.md" ]]
+! grep -Fq 'AGENTS.md' "$claude_block"
+! grep -Eq '(^|/)AGENTS\.md$|^\.agents/|agents/openai\.yaml$' \
+  "$root/scripts/harness-install-files.txt" "$root/scripts/engineering-wisdom-install-files.txt"
+
+required_entry_text=(
   'Start with the requested outcome'
   'Inspection does not authorize edits or operation.'
   'missing capabilities'
@@ -26,11 +32,11 @@ required_agent_text=(
   'Only invoke a Harness skill when the user explicitly requests it.'
   'Consumer repositories own their task workflow and planning.'
 )
-for text in "${required_agent_text[@]}"; do
-  grep -Fq "$text" "$agent_block"
+for text in "${required_entry_text[@]}"; do
+  grep -Fq "$text" "$claude_block"
 done
-! grep -Fq 'docs/plans/active/' "$agent_block"
-! grep -Fq 'docs/patterns/encoding-invariants.md' "$agent_block"
+! grep -Fq 'docs/plans/active/' "$claude_block"
+! grep -Fq 'docs/patterns/encoding-invariants.md' "$claude_block"
 
 # Entry size and word limits live in scripts/context-budget.tsv.
 "$root/scripts/check-context-budget.sh" >/dev/null
@@ -50,23 +56,19 @@ done
 ! grep -Fq 'Select The Work Shape' "$workflow"
 ! grep -Fq '### Bounded Change' "$workflow"
 
-[[ "$(grep -Fc '@AGENTS.md' "$claude_block")" == 1 ]]
 ! grep -Fq 'query matrix' "$claude_block"
 
 payloads=(
-  .agents/skills/audit-onboarding-proposal/SKILL.md
-  .agents/skills/audit-onboarding-proposal/agents/openai.yaml
-  .agents/skills/audit-onboarding-proposal/scripts/validate_evidence_capsule.py
-  .agents/skills/encode-invariant/SKILL.md
-  .agents/skills/encode-invariant/agents/openai.yaml
-  .agents/skills/improve-harness/SKILL.md
-  .agents/skills/improve-harness/agents/openai.yaml
-  .agents/skills/onboard-repository/SKILL.md
-  .agents/skills/onboard-repository/agents/openai.yaml
-  .agents/skills/onboard-repository/references/evidence-capsule-v1.md
-  .agents/skills/onboard-repository/references/evidence-capsule-v2.md
-  .agents/skills/onboard-repository/scripts/emit_evidence_bundle.py
-  .agents/skills/onboard-repository/scripts/render_patch.py
+  CLAUDE.md
+  .claude/skills/audit-onboarding-proposal/SKILL.md
+  .claude/skills/audit-onboarding-proposal/scripts/validate_evidence_capsule.py
+  .claude/skills/encode-invariant/SKILL.md
+  .claude/skills/improve-harness/SKILL.md
+  .claude/skills/onboard-repository/SKILL.md
+  .claude/skills/onboard-repository/references/evidence-capsule-v1.md
+  .claude/skills/onboard-repository/references/evidence-capsule-v2.md
+  .claude/skills/onboard-repository/scripts/emit_evidence_bundle.py
+  .claude/skills/onboard-repository/scripts/render_patch.py
   docs/WORKFLOW.md
   docs/README.md
   docs/patterns/encoding-invariants.md
@@ -88,18 +90,21 @@ done
 
 # Source/configuration contract only: host activation and agent compliance
 # require separate runtime evidence. Cover every skill declared by either profile.
-while IFS= read -r metadata; do
-  case "$metadata" in
-    .agents/skills/*/agents/openai.yaml)
-      grep -Fq 'allow_implicit_invocation: false' "$root/$metadata"
-      ! grep -Fq 'allow_implicit_invocation: true' "$root/$metadata"
-      skill="${metadata%/agents/openai.yaml}/SKILL.md"
-      grep -Fq 'Use only when the user explicitly invokes' "$root/$skill"
+skill_count=0
+while IFS= read -r skill; do
+  case "$skill" in
+    .claude/skills/*/SKILL.md)
+      frontmatter=$(awk '/^---$/ { n++; next } n == 1 { print } n >= 2 { exit }' "$root/$skill")
+      [[ "$(grep -c '^disable-model-invocation:' <<<"$frontmatter")" == 1 ]]
+      grep -Fxq 'disable-model-invocation: true' <<<"$frontmatter"
+      grep -Eq '^description: Use only when the user explicitly invokes `/[a-z-]+`' <<<"$frontmatter"
+      skill_count=$((skill_count + 1))
       ;;
   esac
 done < <(cat "$root/scripts/harness-install-files.txt" "$root/scripts/engineering-wisdom-install-files.txt")
+[[ "$skill_count" == 5 ]]
 
-invariant_skill="$root/.agents/skills/encode-invariant/SKILL.md"
+invariant_skill="$root/.claude/skills/encode-invariant/SKILL.md"
 grep -Fq 'Do not infer policy from conventions, code patterns, tests, defaults, or undocumented preferences.' \
   "$invariant_skill"
 required_invariant_method=(
@@ -116,22 +121,20 @@ for text in "${required_invariant_method[@]}"; do
   grep -Fq "$text" "$invariant_skill"
 done
 
-onboarding_skill="$root/.agents/skills/onboard-repository/SKILL.md"
+onboarding_skill="$root/.claude/skills/onboard-repository/SKILL.md"
 grep -Fq 'Compare documented invariants with executable checks' "$onboarding_skill"
 grep -Fq '**Unenforced rule:**' "$onboarding_skill"
 grep -Fq '**Check lacking authority:**' "$onboarding_skill"
 grep -Fq 'Do not add, edit, delete, enable, or execute a guard during onboarding.' \
   "$onboarding_skill"
 
-grep -Fq 'read_source_text "scripts/agent-harness-block.md"' "$root/scripts/install-harness.sh"
 grep -Fq 'read_source_text "scripts/claude-harness-block.md"' "$root/scripts/install-harness.sh"
-grep -Fq 'REFRESH_AGENT_SHIM=1' "$root/scripts/install-harness.sh"
+grep -Fq 'REFRESH_CLAUDE_SHIM=1' "$root/scripts/install-harness.sh"
+! grep -Eq 'AGENTS\.md|agent-harness-block|REFRESH_AGENT_SHIM|INSTALL_CLAUDE_SHIM' "$root/scripts/install-harness.sh"
 grep -Fq 'ENGINEERING_WISDOM_PAYLOAD_MANIFEST="scripts/engineering-wisdom-install-files.txt"' "$root/scripts/install-harness.sh"
 ! grep -Fq 'CLI_PAYLOAD_MANIFEST' "$root/scripts/install-harness.sh"
 
-grep -Fq 'Read-SourceText "scripts/agent-harness-block.md"' "$root/scripts/install-harness.ps1"
-grep -Fq '[switch]$RefreshAgentShim' "$root/scripts/install-harness.ps1"
-grep -Fq '$script:EngineeringWisdomPayloadManifest = "scripts/engineering-wisdom-install-files.txt"' "$root/scripts/install-harness.ps1"
-! grep -Fq 'CliPayloadManifest' "$root/scripts/install-harness.ps1"
+# Linux and macOS only: no PowerShell bootstrap or Windows test remains.
+[[ -z "$(find "$root/scripts" "$root/tests" -name '*.ps1' -print -quit)" ]]
 
-echo "repository authority, explicit skill configuration, canonical shims, and installer parity passed"
+echo "Claude Code authority, explicit skill configuration, canonical shim, and Linux/macOS-only installer passed"

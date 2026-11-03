@@ -28,7 +28,7 @@ including one final LF:
     "branch": "branch-name"
   },
   "producer_skill": {
-    "path": ".agents/skills/onboard-repository/SKILL.md",
+    "path": ".claude/skills/onboard-repository/SKILL.md",
     "sha256": "64 lowercase hexadecimal characters"
   },
   "boundary": [
@@ -86,7 +86,7 @@ including one final LF:
   "hunks": [
     {
       "id": "H1",
-      "destination": "AGENTS.md",
+      "destination": "CLAUDE.md",
       "boundary": "One exact, trimmed description of the replaced boundary.",
       "before_sha256": "SHA-256 of the complete old boundary bytes",
       "after_sha256": "SHA-256 of the complete proposed boundary bytes",

@@ -1,6 +1,7 @@
 ---
 name: encode-invariant
-description: Use only when the user explicitly invokes `$encode-invariant`. Convert accepted repository rules into native mechanical validation with positive and negative proof. Do not infer policy from conventions, code patterns, tests, defaults, or undocumented preferences.
+description: Use only when the user explicitly invokes `/encode-invariant`. Convert accepted repository rules into native mechanical validation with positive and negative proof. Do not infer policy from conventions, code patterns, tests, defaults, or undocumented preferences.
+disable-model-invocation: true
 ---
 
 # Encode Invariant
@@ -9,7 +10,7 @@ Turn an accepted rule into a focused guard without creating new product policy.
 
 ## 1. Read The Owners
 
-Read applicable `AGENTS.md`, `docs/WORKFLOW.md`, and the complete
+Read applicable `CLAUDE.md`, `docs/WORKFLOW.md`, and the complete
 [encoding pattern](../../../docs/patterns/encoding-invariants.md). Locate the
 repository's product or technical authority and its native validation owner.
 

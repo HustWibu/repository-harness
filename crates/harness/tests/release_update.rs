@@ -31,7 +31,7 @@ fn latest_release_handoff_retains_candidate_across_agent_resolved_conflict() {
     )
     .unwrap();
 
-    let path = RelativePath::parse("AGENTS.md").unwrap();
+    let path = RelativePath::parse("CLAUDE.md").unwrap();
     let base = b"base authority\n";
     let state = InstallationState {
         schema_version: InstallationState::SCHEMA_VERSION,
@@ -58,34 +58,26 @@ fn latest_release_handoff_retains_candidate_across_agent_resolved_conflict() {
     let stopped_json: serde_json::Value = serde_json::from_slice(&stopped.stdout).unwrap();
     assert_eq!(stopped_json["resolution_staged"], true);
     assert_eq!(
-        fs::read(workspace.path().join("AGENTS.md")).unwrap(),
+        fs::read(workspace.path().join("CLAUDE.md")).unwrap(),
         b"local authority\n"
     );
     assert!(workspace
         .path()
         .join(".harness-core/update-candidate")
-        .join(if cfg!(windows) {
-            "harness.exe"
-        } else {
-            "harness"
-        })
+        .join("harness")
         .is_file());
 
     fs::write(
         workspace
             .path()
-            .join(".harness-core/update/resolved/AGENTS.md"),
+            .join(".harness-core/update/resolved/CLAUDE.md"),
         b"human-approved combined authority\n",
     )
     .unwrap();
     let retained_candidate = workspace
         .path()
         .join(".harness-core/update-candidate")
-        .join(if cfg!(windows) {
-            "harness.exe"
-        } else {
-            "harness"
-        });
+        .join("harness");
     fs::write(&retained_candidate, b"tampered candidate").unwrap();
     let tampered = run_update(
         binary,
@@ -96,7 +88,7 @@ fn latest_release_handoff_retains_candidate_across_agent_resolved_conflict() {
     assert!(!tampered.status.success());
     assert!(String::from_utf8_lossy(&tampered.stderr).contains("checksum mismatch"));
     assert_eq!(
-        fs::read(workspace.path().join("AGENTS.md")).unwrap(),
+        fs::read(workspace.path().join("CLAUDE.md")).unwrap(),
         b"local authority\n"
     );
     fs::copy(&release_binary, &retained_candidate).unwrap();
@@ -115,7 +107,7 @@ fn latest_release_handoff_retains_candidate_across_agent_resolved_conflict() {
     assert_eq!(continued_json["applied"], true);
     assert_eq!(continued_json["resolution_staged"], false);
     assert_eq!(
-        fs::read(workspace.path().join("AGENTS.md")).unwrap(),
+        fs::read(workspace.path().join("CLAUDE.md")).unwrap(),
         b"human-approved combined authority\n"
     );
     assert!(!workspace.path().join(".harness-core/update").exists());
@@ -144,7 +136,7 @@ fn release_pointer_version_must_match_candidate_reported_version() {
     )
     .unwrap();
 
-    let path = RelativePath::parse("AGENTS.md").unwrap();
+    let path = RelativePath::parse("CLAUDE.md").unwrap();
     let base = b"base authority\n";
     FileSystemInstallationState
         .apply(
@@ -210,7 +202,7 @@ fn update_refuses_to_replace_an_executable_outside_the_selected_repository() {
     )
     .unwrap();
 
-    let path = RelativePath::parse("AGENTS.md").unwrap();
+    let path = RelativePath::parse("CLAUDE.md").unwrap();
     let base = b"base authority\n";
     FileSystemInstallationState
         .apply(
@@ -252,7 +244,7 @@ fn update_refuses_to_replace_an_executable_outside_the_selected_repository() {
         "{}",
         String::from_utf8_lossy(&output.stderr)
     );
-    assert_eq!(fs::read(workspace.path().join("AGENTS.md")).unwrap(), base);
+    assert_eq!(fs::read(workspace.path().join("CLAUDE.md")).unwrap(), base);
 }
 
 #[cfg(unix)]
@@ -287,7 +279,7 @@ fn update_recovers_an_outdated_executable_before_starting_another_core_update() 
     )
     .unwrap();
 
-    let path = RelativePath::parse("AGENTS.md").unwrap();
+    let path = RelativePath::parse("CLAUDE.md").unwrap();
     let base = b"already updated\n";
     FileSystemInstallationState
         .apply(
@@ -337,7 +329,7 @@ fn update_recovers_an_outdated_executable_before_starting_another_core_update() 
     );
     assert!(output.status.success());
     assert!(String::from_utf8_lossy(&output.stdout).contains("Recovered Harness executable"));
-    assert_eq!(fs::read(workspace.path().join("AGENTS.md")).unwrap(), base);
+    assert_eq!(fs::read(workspace.path().join("CLAUDE.md")).unwrap(), base);
     assert!(!workspace
         .path()
         .join(".harness-core/update-candidate")
@@ -376,7 +368,7 @@ fn clean_update_replaces_the_selected_repository_executable() {
     )
     .unwrap();
 
-    let path = RelativePath::parse("AGENTS.md").unwrap();
+    let path = RelativePath::parse("CLAUDE.md").unwrap();
     let base = b"installed authority\n";
     FileSystemInstallationState
         .apply(
@@ -454,7 +446,6 @@ fn platform_artifact() -> &'static str {
         ("macos", "x86_64") => "harness-macos-x64",
         ("linux", "aarch64") => "harness-linux-arm64",
         ("linux", "x86_64") => "harness-linux-x64",
-        ("windows", "x86_64") => "harness-windows-x64.exe",
         (os, arch) => panic!("unsupported test platform: {os}/{arch}"),
     }
 }

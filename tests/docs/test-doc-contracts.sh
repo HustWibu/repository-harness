@@ -11,12 +11,12 @@ fail() {
 require() {
   local file=$1
   local text=$2
-  rg -Fq -- "$text" "$root/$file" || fail "$file omits: $text"
+  grep -Fq -- "$text" "$root/$file" || fail "$file omits: $text"
 }
 
 current_files=(
   README.md
-  AGENTS.md
+  CLAUDE.md
   docs/WORKFLOW.md
   docs/ARCHITECTURE.md
   docs/HARNESS.md
@@ -43,6 +43,8 @@ current_files=(
   docs/decisions/0028-authoritative-invariant-encoding.md
   docs/decisions/0029-measured-skills-context-budget-and-approval-frontmatter.md
   docs/decisions/0030-evidence-first-completion-and-handoff.md
+  docs/decisions/0031-claude-code-only-host.md
+  docs/decisions/0032-linux-and-macos-only.md
   docs/research/application-legibility.md
   docs/research/harness-gap-analysis.md
   docs/research/harness-requirements-ideas.md
@@ -52,9 +54,9 @@ for file in "${current_files[@]}"; do
   [[ -f "$root/$file" ]] || fail "missing current artifact: $file"
 done
 
-require AGENTS.md 'Start with the requested outcome'
-require AGENTS.md 'configurable defaults are not authority'
-require AGENTS.md 'Only invoke a Harness skill when the user explicitly requests it.'
+require CLAUDE.md 'Start with the requested outcome'
+require CLAUDE.md 'configurable defaults are not authority'
+require CLAUDE.md 'Only invoke a Harness skill when the user explicitly requests it.'
 require docs/WORKFLOW.md '## Authority And Scope'
 require docs/WORKFLOW.md '## Missing Capabilities'
 require docs/WORKFLOW.md '## Trust Through Evidence'
@@ -144,20 +146,19 @@ for gate in "${required_gates[@]}"; do
 done
 
 require .github/workflows/premerge.yml 'run: scripts/validate-premerge.sh'
-require .github/workflows/premerge.yml 'tests/installer/test-install-harness-modes.ps1'
 require .github/workflows/harness-release.yml 'run: scripts/validate-premerge.sh'
 
 # Every distributed skill ends with a machine-countable receipt line.
 while IFS= read -r skill; do
   name=$(basename "$(dirname "$skill")")
-  rg -Fq -- "HARNESS_SKILL: $name | done|stopped|skipped |" "$root/$skill" ||
+  grep -Fq -- "HARNESS_SKILL: $name | done|stopped|skipped |" "$root/$skill" ||
     fail "$skill omits its HARNESS_SKILL receipt instruction"
 done < <(cat "$root/scripts/harness-install-files.txt" \
   "$root/scripts/engineering-wisdom-install-files.txt" |
-  grep -E '^\.agents/skills/[^/]+/SKILL\.md$' | LC_ALL=C sort -u)
-require .agents/skills/encode-invariant/SKILL.md 'Missing frontmatter means not approved'
+  grep -E '^\.claude/skills/[^/]+/SKILL\.md$' | LC_ALL=C sort -u)
+require .claude/skills/encode-invariant/SKILL.md 'Missing frontmatter means not approved'
 
-"$root/tests/installer/assert-agent-authority-contract.sh" >/dev/null
+"$root/tests/installer/assert-claude-authority-contract.sh" >/dev/null
 "$root/tests/installer/assert-install-manifest-links.sh" >/dev/null
 
 echo "current product, EOL boundary, manifest, authority, and validation references passed"

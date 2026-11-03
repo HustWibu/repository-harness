@@ -10,8 +10,7 @@ for artifact in \
   harness-linux-arm64 harness-linux-arm64.sha256 \
   harness-linux-x64 harness-linux-x64.sha256 \
   harness-macos-arm64 harness-macos-arm64.sha256 \
-  harness-macos-x64 harness-macos-x64.sha256 \
-  harness-windows-x64.exe harness-windows-x64.exe.sha256; do
+  harness-macos-x64 harness-macos-x64.sha256; do
   touch "$temp/$artifact"
 done
 "$verify" "$temp" >/dev/null

@@ -28,8 +28,8 @@ expect_failure() {
   done
 }
 
-expect_failure entry '^(bytes	scripts/agent-harness-block.md	)[0-9]+' '\110' 'scripts/agent-harness-block.md is'
-expect_failure skill '^(bytes	\.agents/skills/\*/SKILL.md	)[0-9]+' '\110' '.agents/skills/encode-invariant/SKILL.md is'
+expect_failure entry '^(bytes	scripts/claude-harness-block.md	)[0-9]+' '\110' 'scripts/claude-harness-block.md is'
+expect_failure skill '^(bytes	\.claude/skills/\*/SKILL.md	)[0-9]+' '\110' '.claude/skills/encode-invariant/SKILL.md is'
 expect_failure description '^(chars	skill-description	)[0-9]+' '\110' 'description is'
 expect_failure words '^(words	[^	]+	)[0-9]+' '\110' 'words; limit is 10'
 

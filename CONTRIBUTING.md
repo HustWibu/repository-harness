@@ -13,7 +13,7 @@ understand without adding a parallel control plane.
 
 ## Before Editing
 
-1. Read `AGENTS.md` and `docs/WORKFLOW.md`.
+1. Read `CLAUDE.md` and `docs/WORKFLOW.md`.
 2. Identify the repository authority for externally observable behavior.
 3. Use a durable plan only when the work spans sessions, coordinates people,
    has meaningful dependencies, or needs recovery memory.

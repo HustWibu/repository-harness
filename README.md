@@ -21,7 +21,8 @@ Coding agents often fail for ordinary engineering reasons:
 - an agent invents product policy when the request leaves a material choice
   open.
 
-Harness provides a compact entrypoint, a navigable repository map, optional
+Harness targets Claude Code only. It provides a compact `CLAUDE.md`
+entrypoint, a navigable repository map, optional
 knowledge-discovery tools, and a safe maintenance binary.
 
 ## Repository Understanding
@@ -34,21 +35,21 @@ uncertainty rather than inventing commands or claiming unsupported results.
 Consumer repositories own task workflow and planning. Harness skills run only
 when explicitly requested; installation does not activate them.
 
-Start with [`AGENTS.md`](AGENTS.md) and the repository map in
+Start with [`CLAUDE.md`](CLAUDE.md) and the repository map in
 [`docs/README.md`](docs/README.md).
 
 ## What Gets Installed
 
 The default core contains:
 
-- a compact `AGENTS.md` entrypoint;
+- a compact `CLAUDE.md` entrypoint that Claude Code loads every session;
 - repository context and navigation;
 - optional product, decision, and execution-plan locations;
 - optional templates for durable plans, decisions, application runbooks,
   session handoffs, evaluator rubrics, and evidence-backed Harness
   improvements; and
-- an invariant-encoding reference and explicit-only skills for discovery,
-  audit, encoding, and improvement.
+- an invariant-encoding reference and explicit-only Claude Code skills under
+  `.claude/skills/` for discovery, audit, encoding, and improvement.
 
 It does not install application architecture, product policy, validation
 commands, credentials, a database, schemas, orchestration, or background
@@ -66,15 +67,13 @@ curl -fsSL "https://raw.githubusercontent.com/hoangnb24/repository-harness/main/
   bash -s -- --yes
 ```
 
-On PowerShell:
+Harness supports Linux and macOS (x64 and arm64). Windows is not supported.
 
-```powershell
-& ([scriptblock]::Create((irm "https://raw.githubusercontent.com/hoangnb24/repository-harness/main/scripts/install-harness.ps1"))) -Yes
-```
-
-Use `--merge` / `-Merge` to preserve existing files and add only missing
-Harness paths. Use `--override` / `-Override` only when replacement is
-intentional. Use `--dry-run` / `-DryRun` to preview.
+Use `--merge` to preserve existing files and add only missing
+Harness paths. An existing `CLAUDE.md` is kept as is; add
+`--refresh-claude-shim` to append or refresh the marked
+Harness block inside it. Use `--override` only when replacement
+is intentional. Use `--dry-run` to preview.
 
 The bootstrap downloads a versioned `harness` binary and checksum, verifies
 release identity, and delegates installation to that candidate.
@@ -122,19 +121,19 @@ Invariant enforcement routes accepted rules through repository-native
 validation:
 
 ```text
-$encode-invariant
+/encode-invariant
 ```
 
 Brownfield onboarding is explicit and read-only first:
 
 ```text
-$onboard-repository
+/onboard-repository
 ```
 
 Harness improvement is also explicit and requires baseline-to-rerun evidence:
 
 ```text
-$improve-harness
+/improve-harness
 ```
 
 Engineering advice is a separate opt-in payload:
@@ -144,7 +143,8 @@ scripts/install-harness.sh --with-engineering-wisdom --yes /path/to/project
 ```
 
 All Harness skills require explicit user invocation, including invariant
-encoding. No skill runs during installation or merely because a request
+encoding: each `SKILL.md` sets `disable-model-invocation: true`, so Claude Code
+runs it only from its slash command. No skill runs during installation or merely because a request
 matches its subject matter.
 
 ## What We Prove

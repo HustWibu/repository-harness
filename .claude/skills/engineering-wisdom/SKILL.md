@@ -1,6 +1,7 @@
 ---
 name: engineering-wisdom
-description: Use only when the user explicitly invokes `$engineering-wisdom`. Provide repository-grounded engineering advice using contextual heuristics. Advice does not establish repository policy or authorize an architecture rewrite.
+description: Use only when the user explicitly invokes `/engineering-wisdom`. Provide repository-grounded engineering advice using contextual heuristics. Advice does not establish repository policy or authorize an architecture rewrite.
+disable-model-invocation: true
 ---
 
 # Engineering Wisdom
@@ -10,7 +11,7 @@ Repository intent, code, tests, and observed behavior remain authoritative.
 
 ## Establish Scope
 
-1. Read `AGENTS.md`, `docs/WORKFLOW.md`, and only the repository material
+1. Read `CLAUDE.md`, `docs/WORKFLOW.md`, and only the repository material
    relevant to the request.
 2. Confirm that the user explicitly invoked this skill. Installation alone is
    not activation.

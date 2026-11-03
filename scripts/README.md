@@ -10,12 +10,10 @@ scripts/validate-premerge.sh
 
 - `install-harness.sh`: Bash bootstrap for the versioned Rust `harness`
   candidate.
-- `install-harness.ps1`: PowerShell bootstrap with the same product contract.
 - `harness-install-files.txt`: exact embedded core payload.
 - `engineering-wisdom-install-files.txt`: independent optional advisory
   payload.
-- `agent-harness-block.md` and `claude-harness-block.md`: managed entrypoint
-  shims.
+- `claude-harness-block.md`: the managed Harness block of `CLAUDE.md`.
 
 The bootstraps verify candidate checksum and reported version before delegating
 install or update. They do not contain a database or compatibility profile.

@@ -1,6 +1,7 @@
 ---
 name: audit-onboarding-proposal
-description: Use only when the user explicitly invokes `$audit-onboarding-proposal`. Independently audit an onboarding transcript and exact evidence-backed proposals. Remain read-only and verify claims against pinned repository evidence rather than trusting the producer.
+description: Use only when the user explicitly invokes `/audit-onboarding-proposal`. Independently audit an onboarding transcript and exact evidence-backed proposals. Remain read-only and verify claims against pinned repository evidence rather than trusting the producer.
+disable-model-invocation: true
 ---
 
 # Audit Onboarding Proposal
@@ -110,7 +111,7 @@ marked diff hunks in the completed assistant message. After authenticating the
 raw transcript, run:
 
 ```text
-python3 .agents/skills/audit-onboarding-proposal/scripts/validate_evidence_capsule.py --transcript <raw-session.jsonl> --expected-transcript-sha256 <sha256> --repository <tested-worktree>
+python3 .claude/skills/audit-onboarding-proposal/scripts/validate_evidence_capsule.py --transcript <raw-session.jsonl> --expected-transcript-sha256 <sha256> --repository <tested-worktree>
 ```
 
 The validator is read-only. It verifies capsule structure, referential

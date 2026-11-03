@@ -1,6 +1,7 @@
 ---
 name: onboard-repository
-description: Use only when the user explicitly invokes `$onboard-repository`. Inspect an unfamiliar repository, trace one operational path, identify missing capabilities, and propose evidence-backed knowledge improvements. The first pass is read-only; apply exact approved items only within the requested scope.
+description: Use only when the user explicitly invokes `/onboard-repository`. Inspect an unfamiliar repository, trace one operational path, identify missing capabilities, and propose evidence-backed knowledge improvements. The first pass is read-only; apply exact approved items only within the requested scope.
+disable-model-invocation: true
 ---
 
 # Onboard Repository
@@ -13,7 +14,7 @@ repository as the system of record. Separate facts from gaps and suggestions.
 The first pass is always inspection and proposal only, even when the worktree
 is writable.
 
-- Read every applicable `AGENTS.md` before inspecting deeper files.
+- Read every applicable `CLAUDE.md` before inspecting deeper files.
 - Capture the initial Git root, revision, branch, status, and worktree list.
 - Preserve all pre-existing tracked and untracked changes.
 - In the initial boundary capture, before deeper repository inspection, record
@@ -260,7 +261,7 @@ complete bytes to the bundled renderer:
 
 ```text
 <non-materializing command that prints the complete after image> |
-  python3 .agents/skills/onboard-repository/scripts/render_patch.py \
+  python3 .claude/skills/onboard-repository/scripts/render_patch.py \
     --repository <tested-root> \
     --revision <full-tested-revision> \
     --destination <repository-relative-path> \
@@ -359,7 +360,7 @@ There are no patch IDs or edits to approve in this outcome.
 
 ```text
 <non-materializing command that prints the JSON spec> |
-  python3 .agents/skills/onboard-repository/scripts/emit_evidence_bundle.py \
+  python3 .claude/skills/onboard-repository/scripts/emit_evidence_bundle.py \
     --repository <tested-root> \
     --revision <full-tested-revision> \
     --branch <tested-branch>
@@ -416,7 +417,7 @@ the prose gate rather than silently upgrading them.
 When the sibling audit skill is installed, its read-only validator is:
 
 ```text
-python3 .agents/skills/audit-onboarding-proposal/scripts/validate_evidence_capsule.py --transcript <raw-session.jsonl> --expected-transcript-sha256 <sha256> --repository <tested-worktree>
+python3 .claude/skills/audit-onboarding-proposal/scripts/validate_evidence_capsule.py --transcript <raw-session.jsonl> --expected-transcript-sha256 <sha256> --repository <tested-worktree>
 ```
 
 The validator can run only after the transcript exists. For new runs it

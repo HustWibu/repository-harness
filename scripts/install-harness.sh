@@ -15,18 +15,12 @@ Options:
                          skill. It is excluded from the default core.
       --merge            On protected-path conflict, keep existing files in
                          place and install only missing Harness files.
-      --refresh-agent-shim
-                         Refresh an existing AGENTS.md into the small Harness
-                         shim after backing it up. Old Harness-generated files
-                         are replaced; custom files receive a marked block.
-      --claude           Also install or refresh CLAUDE.md so Claude Code
-                         auto-loads the harness context. Claude Code never
-                         auto-loads AGENTS.md; the shim @-imports AGENTS.md
-                         as its single policy source inside a marked block.
-                         Existing CLAUDE.md files get the block appended
-                         after a backup; a stale block is refreshed in place.
+      --refresh-claude-shim
+                         Add or refresh the marked Harness block in an
+                         existing CLAUDE.md after backing it up. Text outside
+                         the block is kept; a stale block is replaced in place.
       --override         On protected-path conflict, back up and replace
-                         AGENTS.md and docs/.
+                         CLAUDE.md and docs/.
       --force            Overwrite existing files after backing them up.
       --dry-run          Show what would change without writing files.
   -h, --help             Show this help.
@@ -34,7 +28,7 @@ Options:
 Safety:
   The installer installs the repository-centered core plus the Rust
   maintenance CLI. It performs no compatibility CLI or SQLite/control-plane
-  download and no database write. If AGENTS.md or docs/ already exist,
+  download and no database write. If CLAUDE.md or docs/ already exist,
   interactive installs ask
   whether to merge missing files, override after backup, or stop. Merge is the
   safe update path for repositories that already have Harness: existing files
@@ -49,8 +43,7 @@ Examples:
   scripts/install-harness.sh ./my-project --force
   curl -fsSL https://raw.githubusercontent.com/hoangnb24/repository-harness/main/scripts/install-harness.sh | bash -s -- --yes
   curl -fsSL https://raw.githubusercontent.com/hoangnb24/repository-harness/main/scripts/install-harness.sh | bash -s -- --merge --yes
-  curl -fsSL https://raw.githubusercontent.com/hoangnb24/repository-harness/main/scripts/install-harness.sh | bash -s -- --merge --refresh-agent-shim --yes
-  curl -fsSL https://raw.githubusercontent.com/hoangnb24/repository-harness/main/scripts/install-harness.sh | bash -s -- --claude --yes
+  curl -fsSL https://raw.githubusercontent.com/hoangnb24/repository-harness/main/scripts/install-harness.sh | bash -s -- --merge --refresh-claude-shim --yes
 EOF
 }
 
@@ -153,14 +146,6 @@ write_source_file() {
   local relative="$1"
   local target="$2"
 
-  if [ "$relative" = "AGENTS.md" ]; then
-    {
-      printf '# Agent Instructions\n\n'
-      agent_shim_block
-    } > "$target"
-    return
-  fi
-
   if [ "$SOURCE_MODE" = "local" ]; then
     local source="$SOURCE_ROOT/$relative"
     [ -f "$source" ] || fail "Source file missing: $source"
@@ -218,113 +203,8 @@ $manifest
 EOF
 }
 
-agent_shim_block() {
-  read_source_text "scripts/agent-harness-block.md"
-}
-
 claude_shim_block() {
   read_source_text "scripts/claude-harness-block.md"
-}
-
-is_old_harness_agent_file() {
-  local target="$1"
-
-  grep -Fxq "# Agent Operating Guide" "$target" &&
-    grep -Fxq "This repository is in Harness v0. There is no product implementation yet." "$target" &&
-    grep -Fxq "## Source Of Truth" "$target" &&
-    grep -Fxq "## Task Loop" "$target" &&
-    grep -Fxq "## Done Definition" "$target"
-}
-
-backup_agent_file() {
-  local target="$TARGET_DIR/AGENTS.md"
-
-  [ -e "$target" ] || return 0
-  mkdir -p "$BACKUP_DIR"
-  [ -e "$BACKUP_DIR/AGENTS.md" ] && return 0
-  cp -p "$target" "$BACKUP_DIR/AGENTS.md"
-}
-
-extract_obvious_agent_custom_section() {
-  local target="$1"
-  local output="$2"
-
-  awk '
-    /^## (Project-specific|Project Specific|Local|Custom).*Instructions/ {
-      capture = 1
-      print
-      next
-    }
-    /^## / && capture {
-      capture = 0
-    }
-    capture {
-      print
-    }
-  ' "$target" > "$output"
-}
-
-insert_agent_custom_section() {
-  local target="$1"
-  local custom="$2"
-  local tmp
-
-  [ -s "$custom" ] || return 0
-  tmp="$(mktemp)"
-  awk '
-    $0 == "Add project-specific agent instructions here." {
-      while ((getline line < custom_file) > 0) {
-        print line
-      }
-      inserted = 1
-      next
-    }
-    { print }
-    END {
-      if (!inserted) {
-        print ""
-        while ((getline line < custom_file) > 0) {
-          print line
-        }
-      }
-    }
-  ' custom_file="$custom" "$target" > "$tmp"
-  mv "$tmp" "$target"
-}
-
-append_or_replace_agent_harness_block() {
-  local target="$TARGET_DIR/AGENTS.md"
-  local block_tmp tmp
-
-  block_tmp="$(mktemp)"
-  agent_shim_block >"$block_tmp"
-  [ -s "$block_tmp" ] || fail "canonical AGENTS.md Harness block is empty"
-  tmp="$(mktemp)"
-  if grep -Fq "<!-- HARNESS:BEGIN -->" "$target" &&
-     grep -Fq "<!-- HARNESS:END -->" "$target"; then
-    awk '
-      /<!-- HARNESS:BEGIN -->/ {
-        while ((getline line < block_file) > 0) {
-          print line
-        }
-        in_block = 1
-        next
-      }
-      /<!-- HARNESS:END -->/ && in_block {
-        in_block = 0
-        next
-      }
-      !in_block { print }
-    ' block_file="$block_tmp" "$target" > "$tmp"
-  else
-    {
-      cat "$target"
-      printf '\n'
-      agent_shim_block
-    } > "$tmp"
-  fi
-  mv "$tmp" "$target"
-  rm -f "$block_tmp"
 }
 
 validate_harness_markers() {
@@ -343,45 +223,6 @@ validate_harness_markers() {
   [ "$begin_line" -lt "$end_line" ] || fail "$label Harness markers are out of order"
 }
 
-refresh_agent_shim() {
-  [ "$REFRESH_AGENT_SHIM" -eq 1 ] || return 0
-
-  local target="$TARGET_DIR/AGENTS.md"
-  [ -e "$target" ] || return 0
-
-  if [ "$SOURCE_MODE" = "local" ] && [ "$SOURCE_ROOT/AGENTS.md" -ef "$target" ]; then
-    log "skip     AGENTS.md (source file)"
-    return 0
-  fi
-
-  validate_harness_markers "$target" "AGENTS.md"
-
-  if [ "$DRY_RUN" -eq 1 ]; then
-    if is_old_harness_agent_file "$target"; then
-      log "refresh  AGENTS.md (old Harness guide -> shim, backup first)"
-    else
-      log "refresh  AGENTS.md (append or replace marked Harness block, backup first)"
-    fi
-    UPDATED=$((UPDATED + 1))
-    return 0
-  fi
-
-  backup_agent_file
-  if is_old_harness_agent_file "$target"; then
-    local custom_tmp
-    custom_tmp="$(mktemp)"
-    extract_obvious_agent_custom_section "$target" "$custom_tmp"
-    write_source_file "AGENTS.md" "$target"
-    insert_agent_custom_section "$target" "$custom_tmp"
-    rm -f "$custom_tmp"
-    log "updated  AGENTS.md (old Harness guide -> shim; backup: ${BACKUP_DIR#$TARGET_DIR/}/AGENTS.md)"
-  else
-    append_or_replace_agent_harness_block
-    log "updated  AGENTS.md (refreshed Harness block; backup: ${BACKUP_DIR#$TARGET_DIR/}/AGENTS.md)"
-  fi
-  UPDATED=$((UPDATED + 1))
-}
-
 backup_claude_file() {
   local target="$TARGET_DIR/CLAUDE.md"
 
@@ -391,11 +232,16 @@ backup_claude_file() {
   cp -p "$target" "$BACKUP_DIR/CLAUDE.md"
 }
 
-write_claude_shim() {
-  [ "$INSTALL_CLAUDE_SHIM" -eq 1 ] || return 0
-
+refresh_claude_shim() {
   local target="$TARGET_DIR/CLAUDE.md"
   local block_tmp tmp
+
+  if [ "$REFRESH_CLAUDE_SHIM" -eq 0 ]; then
+    if [ -f "$target" ] && ! grep -Fq "<!-- HARNESS:BEGIN -->" "$target"; then
+      log "note     CLAUDE.md has no Harness block; rerun with --refresh-claude-shim to add it"
+    fi
+    return 0
+  fi
 
   if [ "$SOURCE_MODE" = "local" ] && [ -e "$target" ] &&
      [ "$SOURCE_ROOT/CLAUDE.md" -ef "$target" ]; then
@@ -464,17 +310,6 @@ write_claude_shim() {
       log "updated  CLAUDE.md (appended Harness block; backup: ${BACKUP_DIR#$TARGET_DIR/}/CLAUDE.md)"
     fi
     UPDATED=$((UPDATED + 1))
-  else
-    if [ "$DRY_RUN" -eq 1 ]; then
-      log "create   CLAUDE.md"
-    else
-      {
-        printf '# Project Rules\n\n'
-        cat "$block_tmp"
-      } > "$target"
-      log "created  CLAUDE.md"
-    fi
-    CREATED=$((CREATED + 1))
   fi
   rm -f "$block_tmp"
 }
@@ -538,8 +373,7 @@ merge_core_gitignore() {
   local target="$1"
   local marker="# Harness core maintenance binary"
   local unix_rule="scripts/bin/harness"
-  local windows_rule="scripts/bin/harness.exe"
-  if [ -f "$target" ] && grep -Fxq "$unix_rule" "$target" && grep -Fxq "$windows_rule" "$target"; then
+  if [ -f "$target" ] && grep -Fxq "$unix_rule" "$target"; then
     log "skip     .gitignore (Harness core binary rules already present)"
     return
   fi
@@ -549,7 +383,6 @@ merge_core_gitignore() {
   fi
   local missing_rules=()
   [ -f "$target" ] && grep -Fxq "$unix_rule" "$target" || missing_rules+=("$unix_rule")
-  [ -f "$target" ] && grep -Fxq "$windows_rule" "$target" || missing_rules+=("$windows_rule")
   {
     [ -s "$target" ] && printf '\n'
     printf '%s\n' "$marker"
@@ -659,7 +492,7 @@ install_harness_core() {
 check_protected_target_paths() {
   local conflicts=()
 
-  [ -e "$TARGET_DIR/AGENTS.md" ] && conflicts+=("AGENTS.md")
+  [ -e "$TARGET_DIR/CLAUDE.md" ] && conflicts+=("CLAUDE.md")
   [ -e "$TARGET_DIR/docs" ] && conflicts+=("docs/")
   [ "${#conflicts[@]}" -gt 0 ] || return 0
 
@@ -697,7 +530,7 @@ check_protected_target_paths() {
     printf 'Warning: target already contains protected Harness paths: %s\n' "$joined"
     printf 'Choose how to continue:\n'
     printf '  1. Merge    Copy missing Harness files and skip existing files\n'
-    printf '  2. Override Back up and replace AGENTS.md and docs/\n'
+    printf '  2. Override Back up and replace CLAUDE.md and docs/\n'
     printf '  3. Stop     Exit without writing files (recommended)\n'
   } > /dev/tty
   prompt_tty 'Choice [1/2/3, default 3]: '
@@ -725,7 +558,7 @@ check_protected_target_paths() {
 override_protected_target_paths() {
   local protected
 
-  for protected in AGENTS.md docs; do
+  for protected in CLAUDE.md docs; do
     [ -e "$TARGET_DIR/$protected" ] || continue
 
     if [ "$DRY_RUN" -eq 1 ]; then
@@ -750,8 +583,7 @@ YES=0
 FORCE=0
 DRY_RUN=0
 INSTALL_ENGINEERING_WISDOM=0
-REFRESH_AGENT_SHIM=0
-INSTALL_CLAUDE_SHIM=0
+REFRESH_CLAUDE_SHIM=0
 REQUESTED_CONFLICT_ACTION=""
 POSITIONAL_TARGET=""
 
@@ -778,12 +610,8 @@ while [ "$#" -gt 0 ]; do
       REQUESTED_CONFLICT_ACTION="merge"
       shift
       ;;
-    --refresh-agent-shim)
-      REFRESH_AGENT_SHIM=1
-      shift
-      ;;
-    --claude)
-      INSTALL_CLAUDE_SHIM=1
+    --refresh-claude-shim)
+      REFRESH_CLAUDE_SHIM=1
       shift
       ;;
     --override)
@@ -840,7 +668,7 @@ CORE_SOURCE_BASE_URL="${CORE_SOURCE_BASE_URL%/}"
 PAYLOAD_MANIFEST="scripts/harness-install-files.txt"
 ENGINEERING_WISDOM_PAYLOAD_MANIFEST="scripts/engineering-wisdom-install-files.txt"
 
-if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/../AGENTS.md" ] && [ -f "$SCRIPT_DIR/../docs/HARNESS.md" ]; then
+if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/../CLAUDE.md" ] && [ -f "$SCRIPT_DIR/../docs/HARNESS.md" ]; then
   SOURCE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd -P)"
   SOURCE_MODE="local"
 fi
@@ -898,8 +726,7 @@ log "Target project: $TARGET_DIR"
 install_harness_core
 
 install_engineering_wisdom
-refresh_agent_shim
-write_claude_shim
+refresh_claude_shim
 
 log ""
 log "Done. Created: $CREATED, updated: $UPDATED, skipped: $SKIPPED."
