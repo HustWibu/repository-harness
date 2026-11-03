@@ -19,6 +19,7 @@ is an available reference, not a required task step.
 | 0027 | End Protocol V1 And Focus The Repository Protocol |
 | 0028 | Authoritative Invariant Encoding |
 | 0029 | Measured Skills, Context Budget, And Approval Frontmatter (proposed) |
+| 0030 | Evidence-First Completion, Handoff, Rubric, And Gate Retirement (proposed) |
 
 These decisions describe upstream Harness. Installed consumers begin with an
 empty decision index and add only real consumer choices.

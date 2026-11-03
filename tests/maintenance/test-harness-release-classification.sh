@@ -16,6 +16,8 @@ positive_paths=(
   docs/patterns/encoding-invariants.md
   docs/templates/application-runbook.md
   docs/templates/harness-improvement.md
+  docs/templates/session-handoff.md
+  docs/templates/evaluator-rubric.md
   scripts/agent-harness-block.md
   scripts/harness-install-files.txt
   scripts/install-harness.sh

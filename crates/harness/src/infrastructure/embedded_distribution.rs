@@ -148,6 +148,16 @@ impl CoreDistributionPort for EmbeddedCoreDistribution {
             "docs/templates/harness-improvement.md",
             include_bytes!("../../../../docs/templates/harness-improvement.md"),
         )?;
+        add(
+            &mut files,
+            "docs/templates/session-handoff.md",
+            include_bytes!("../../../../docs/templates/session-handoff.md"),
+        )?;
+        add(
+            &mut files,
+            "docs/templates/evaluator-rubric.md",
+            include_bytes!("../../../../docs/templates/evaluator-rubric.md"),
+        )?;
         Ok(CoreDistribution {
             version: env!("CARGO_PKG_VERSION").to_owned(),
             files,
