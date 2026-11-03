@@ -20,8 +20,9 @@ Start with the smallest authoritative surface.
 - `research/`: exploratory notes, not product authority or release gates.
   `harness-gap-analysis.md` and `harness-requirements-ideas.md` (Vietnamese)
   compare this harness with the Learn Harness Engineering course.
-- `templates/`: optional decision, plan, runbook, and Harness-improvement
-  structures. The decision template carries checkable approval frontmatter.
+- `templates/`: optional decision, plan, runbook, session-handoff,
+  evaluator-rubric, and Harness-improvement structures. The decision template
+  carries checkable approval frontmatter.
 
 ## Consumer-Owned Truth
 

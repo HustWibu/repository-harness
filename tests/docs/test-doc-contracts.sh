@@ -32,6 +32,8 @@ current_files=(
   docs/templates/decision.md
   docs/templates/exec-plan.md
   docs/templates/harness-improvement.md
+  docs/templates/session-handoff.md
+  docs/templates/evaluator-rubric.md
   docs/decisions/0019-repository-centered-default-workflow.md
   docs/decisions/0020-installation-profile-and-knowledge-boundaries.md
   docs/decisions/0024-rust-harness-core-maintenance-cli.md
@@ -40,6 +42,7 @@ current_files=(
   docs/decisions/0027-end-protocol-v1-and-focus-repository-protocol.md
   docs/decisions/0028-authoritative-invariant-encoding.md
   docs/decisions/0029-measured-skills-context-budget-and-approval-frontmatter.md
+  docs/decisions/0030-evidence-first-completion-and-handoff.md
   docs/research/application-legibility.md
   docs/research/harness-gap-analysis.md
   docs/research/harness-requirements-ideas.md
@@ -56,6 +59,8 @@ require docs/WORKFLOW.md '## Authority And Scope'
 require docs/WORKFLOW.md '## Missing Capabilities'
 require docs/WORKFLOW.md '## Trust Through Evidence'
 require docs/WORKFLOW.md '## Optional Resources'
+require docs/WORKFLOW.md '## Definition Of Done'
+require docs/WORKFLOW.md 'Missing evidence means not verified'
 require docs/patterns/encoding-invariants.md '## 1. Establish Authority'
 require docs/patterns/encoding-invariants.md '## 4. Prove Both Directions'
 require docs/patterns/encoding-invariants.md '## 6. Fail Closed On Missing Evidence'
@@ -65,6 +70,7 @@ require docs/patterns/encoding-invariants.md '## 5. Discover And Report Enforcem
 require docs/patterns/encoding-invariants.md '| Scope | Files, modules, configuration, or runtime objects covered |'
 require docs/patterns/encoding-invariants.md 'Find the repository'
 require docs/patterns/encoding-invariants.md '| Diagnostic | Violating item, broken rule, authority pointer, and next action |'
+require docs/patterns/encoding-invariants.md '| Retirement | Condition under which the check should be removed or revisited |'
 require docs/patterns/encoding-invariants.md '**Positive proof:**'
 require docs/patterns/encoding-invariants.md '**Negative proof:**'
 require docs/patterns/encoding-invariants.md '| Local validation |'
@@ -82,6 +88,12 @@ require .github/ISSUE_TEMPLATE/real-world-example.md '`docs/ARCHITECTURE.md`'
 
 for heading in Outcome Context Scope Approach 'Risks And Recovery' Progress Decisions Validation Result; do
   require docs/templates/exec-plan.md "## $heading"
+done
+for heading in Goal Verified 'Changed But Not Verified' 'Known Broken Or Open' 'Next Step' 'Clean-State Check'; do
+  require docs/templates/session-handoff.md "## $heading"
+done
+for heading in 'Work Reviewed' Scores Verdict 'Required Changes'; do
+  require docs/templates/evaluator-rubric.md "## $heading"
 done
 
 while IFS= read -r payload; do

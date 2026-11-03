@@ -39,6 +39,13 @@ A plan, checklist, or completion message is not behavior-level proof. A checked-
 CI job does not prove it ran or blocks merging. Report what was exercised, what
 failed or could not run, and what remains unverified.
 
+## Definition Of Done
+
+Work is done only when evidence matching the changed behavior was observed.
+Report three lists: verified, with the command or observation; not verified,
+with the reason; and known broken. Missing evidence means not verified, never
+done.
+
 ## Optional Resources
 
 Only invoke a Harness skill when the user explicitly requests it. Installation

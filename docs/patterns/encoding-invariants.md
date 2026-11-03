@@ -39,6 +39,7 @@ Write the invariant before choosing a tool:
 | Forbidden | The precise structure or behavior to reject |
 | Exceptions | Only exceptions stated by the same authority |
 | Diagnostic | Violating item, broken rule, authority pointer, and next action |
+| Retirement | Condition under which the check should be removed or revisited |
 
 Keep adjacent preferences outside the check. If authority forbids one dependency
 direction, do not also enforce naming, layout, or style conventions.
@@ -123,6 +124,10 @@ Add a gate only in the same change that wires it into the place it actually
 runs and proves both directions. An unwired gate is not added. Use
 `scripts/bin/harness skill-report <session.jsonl>...` receipt compliance and token totals
 as evidence when deciding to promote, keep, or remove guidance.
+
+Record a retirement condition with every gate, for example "remove when the
+guarded module is deleted" or "revisit if it has not failed in twelve months".
+A gate without one tends to outlive its reason.
 
 ## Handback
 

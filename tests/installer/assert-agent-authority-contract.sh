@@ -79,6 +79,8 @@ payloads=(
   docs/templates/decision.md
   docs/templates/exec-plan.md
   docs/templates/harness-improvement.md
+  docs/templates/session-handoff.md
+  docs/templates/evaluator-rubric.md
 )
 for payload in "${payloads[@]}"; do
   grep -Fxq "$payload" "$root/scripts/harness-install-files.txt"

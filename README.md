@@ -44,8 +44,9 @@ The default core contains:
 - a compact `AGENTS.md` entrypoint;
 - repository context and navigation;
 - optional product, decision, and execution-plan locations;
-- optional templates for durable plans, decisions, application runbooks, and
-  evidence-backed Harness improvements; and
+- optional templates for durable plans, decisions, application runbooks,
+  session handoffs, evaluator rubrics, and evidence-backed Harness
+  improvements; and
 - an invariant-encoding reference and explicit-only skills for discovery,
   audit, encoding, and improvement.
 
