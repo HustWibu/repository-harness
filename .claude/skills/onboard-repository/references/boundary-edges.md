@@ -54,7 +54,10 @@ reading it and the members its edges reach. Cite member code with a source
 `repository` and that member's revision, as `evidence-capsule-v2.md` defines;
 both ends of an edge can then be confirmed. Start from the member's rows in
 `docs/system-map.md` when the hub has one, and propose destinations in the hub:
-`docs/services/<member>/`, `docs/contracts/`, and `docs/decisions/`.
+`docs/services/<member>/`, `docs/contracts/`, and `docs/decisions/`. Give each
+edge a status from `docs/patterns/multi-repository-evidence.md`, and when the
+later pass writes a hub page, put a `harness-source` marker after each fact,
+reusing the revision, range, and digest of its capsule source.
 
 ## Proposals
 
