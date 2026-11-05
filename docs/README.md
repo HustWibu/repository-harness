@@ -23,8 +23,8 @@ Start with the smallest authoritative surface.
   `multi-repo-requirements.md` (Vietnamese) holds the multi-repository
   requirements behind the optional Related Repositories surfaces.
 - `templates/`: optional decision, plan, runbook, session-handoff,
-  evaluator-rubric, and Harness-improvement structures. The decision template
-  carries checkable approval frontmatter.
+  evaluator-rubric, interface-contract, and Harness-improvement structures.
+  The decision template carries checkable approval frontmatter.
 
 ## Consumer-Owned Truth
 
@@ -57,6 +57,9 @@ to it, and an agent treats a disagreeing copy as a finding, not as authority.
 | Configuration for an environment | | |
 | Requirements | | |
 | Cross-repository progress | | |
+
+Interface contracts recorded with `templates/interface-contract.md` live in a
+directory named here, for example `docs/contracts/`.
 
 ## Source Repository
 
