@@ -75,13 +75,20 @@ impl SourceMarker {
     }
 }
 
-/// Every marker line in a page, with its 1-based line number.
+/// Every marker line in a page, with its 1-based line number. Lines inside
+/// fenced code blocks are examples, not markers.
 pub fn source_markers(text: &str) -> Vec<(usize, Result<SourceMarker, String>)> {
-    text.lines()
-        .enumerate()
-        .filter(|(_, line)| line.trim_start().starts_with(SOURCE_MARKER_PREFIX))
-        .map(|(index, line)| (index + 1, SourceMarker::parse(line)))
-        .collect()
+    let mut fenced = false;
+    let mut markers = Vec::new();
+    for (index, line) in text.lines().enumerate() {
+        let trimmed = line.trim_start();
+        if trimmed.starts_with("```") || trimmed.starts_with("~~~") {
+            fenced = !fenced;
+        } else if !fenced && trimmed.starts_with(SOURCE_MARKER_PREFIX) {
+            markers.push((index + 1, SourceMarker::parse(line)));
+        }
+    }
+    markers
 }
 
 /// Lines with their endings, split like Python's `bytes.splitlines(keepends=True)`,
@@ -197,6 +204,11 @@ mod tests {
         assert_eq!(markers.len(), 2);
         assert_eq!(markers[0].0, 3);
         assert!(markers[1].1.is_err());
+        let documented =
+            format!("```markdown\n{line}\n<!-- harness-source: example -->\n```\n{line}\n");
+        let markers = source_markers(&documented);
+        assert_eq!(markers.len(), 1, "markers inside a fence are examples");
+        assert_eq!(markers[0].0, 5);
     }
 
     #[test]
