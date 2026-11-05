@@ -129,6 +129,57 @@ Record a retirement condition with every gate, for example "remove when the
 guarded module is deleted" or "revisit if it has not failed in twelve months".
 A gate without one tends to outlive its reason.
 
+## 8. Cross-Repository Invariants
+
+Some rules span repositories: a contract copied into several services, or a
+channel name in code that must exist in each environment's configuration. No
+single repository's tests see both sides, so a change on one side breaks the
+other silently.
+
+Authority still comes first. The rule and every source it compares must be
+named under Authority By Truth Type in `docs/README.md`; record the repository
+and path of each source in the Authority field of step 2.
+
+Place the gate in the repository that owns the contract, or in a shared
+specification repository, and run it against checkouts of the related
+repositories. Harness does not host, fetch, or schedule it. Name which
+checkout revisions were compared; a pass on stale checkouts proves only those
+revisions.
+
+### Copies Of A Contract Match
+
+| Field | Content |
+| --- | --- |
+| Authority | The owning repository's definition file, named under Authority By Truth Type |
+| Scope | Every copy of that definition in the related repositories listed there |
+| Forbidden | A copy whose normalized content differs from the owner's definition |
+| Diagnostic | The differing copy's repository and path, the owner's path, and the first difference |
+
+- **Positive proof:** owner and copies are identical; the check passes and
+  names every copy it compared.
+- **Negative proof:** change one field in one copy inside a temporary
+  checkout; the check fails and names that repository and file, for example
+  `billing-service/contracts/order-created.schema differs from
+  orders-service/contracts/order-created.schema at field amount`.
+
+### Channels In Code Exist In Every Environment
+
+| Field | Content |
+| --- | --- |
+| Authority | The environment configuration source named under Authority By Truth Type |
+| Scope | Channel names a service declares in code or its own configuration, and each environment's configuration for that service |
+| Forbidden | A declared channel that is missing from any environment's configuration |
+| Diagnostic | The channel, the declaring file, and each environment file that lacks it |
+
+- **Positive proof:** every declared channel is present in each environment;
+  the check passes and lists the environments it read.
+- **Negative proof:** remove one channel from one environment's file in a
+  temporary checkout; the check fails and names that environment file and the
+  missing channel.
+
+Keep the deliberate mismatch in a temporary checkout or fixture so no related
+repository is left in a broken state.
+
 ## Handback
 
 Report, in order:

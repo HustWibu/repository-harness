@@ -230,6 +230,7 @@ unless the repository or runtime observation identifies it.
 
 Do not execute the path during the first pass. The goal is to learn whether a
 fresh agent could execute it without undocumented human help.
+If the path leaves the repository, read `references/boundary-edges.md`.
 
 ### 4. Propose the smallest useful backfill
 

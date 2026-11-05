@@ -25,6 +25,10 @@ edits unless it has `status: accepted` and a non-empty `approved_by` and
 `approved_at`. Missing frontmatter means not approved; do not infer approval
 from body text.
 
+A source in another repository counts only when `docs/README.md` names it
+under Authority By Truth Type; cite that repository and path, and follow step 8
+of the pattern. Read other repositories only; never edit them here.
+
 Do not promote conventions, code patterns, tests, defaults, tool behavior, or
 undocumented preferences into policy. An existing check without accepted
 authority is a mismatch to report, not authority to expand.

@@ -115,6 +115,13 @@ require docs/templates/exec-plan.md '## Repositories Touched'
 require docs/templates/exec-plan.md 'Other repositories link here and do not copy'
 require docs/templates/session-handoff.md '## Repositories Touched'
 require docs/templates/interface-contract.md 'record the date each row was checked'
+require docs/patterns/encoding-invariants.md '## 8. Cross-Repository Invariants'
+require docs/patterns/encoding-invariants.md '### Copies Of A Contract Match'
+require docs/patterns/encoding-invariants.md '### Channels In Code Exist In Every Environment'
+require .claude/skills/encode-invariant/SKILL.md 'under Authority By Truth Type; cite that repository and path'
+require .claude/skills/onboard-repository/SKILL.md 'read `references/boundary-edges.md`'
+require .claude/skills/onboard-repository/references/boundary-edges.md '**unconfirmed** when only this repository'
+require .claude/skills/onboard-repository/references/boundary-edges.md 'Never clone or fetch a'
 
 # Payload docs are copied to every consumer; a path from one machine is wrong
 # everywhere else.
