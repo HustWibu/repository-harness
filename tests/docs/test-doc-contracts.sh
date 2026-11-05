@@ -129,6 +129,8 @@ require .claude/skills/encode-invariant/SKILL.md 'under Authority By Truth Type;
 require .claude/skills/onboard-repository/SKILL.md 'read `references/boundary-edges.md`'
 require .claude/skills/onboard-repository/references/boundary-edges.md '**unconfirmed** when only this repository'
 require .claude/skills/onboard-repository/references/boundary-edges.md 'Never clone or fetch a'
+require .claude/skills/onboard-repository/SKILL.md 'read `references/untracked-install.md`'
+require .claude/skills/onboard-repository/references/untracked-install.md 'unavailable: untracked install'
 
 # Payload docs are copied to every consumer; a path from one machine is wrong
 # everywhere else.
@@ -141,6 +143,13 @@ while IFS= read -r payload; do
     fail "$payload contains a machine-specific absolute path; use a URL or relative path"
   fi
 done < <(sed -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' "$root/scripts/harness-install-files.txt")
+for asset in "$root"/crates/harness/assets/docs/*.md "$root"/crates/harness/assets/docs/*/*.md; do
+  if grep -nE "$machine_path" "$asset" >&2; then
+    fail "${asset#"$root/"} contains a machine-specific absolute path; use a URL or relative path"
+  fi
+done
+require crates/harness/assets/docs/README.md '### Shared Knowledge Hub'
+require crates/harness/assets/docs/README.md 'hub sync --workspace'
 
 compatibility_paths=(
   crates/harness-cli

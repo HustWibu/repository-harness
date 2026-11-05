@@ -68,6 +68,7 @@ payloads=(
   .claude/skills/onboard-repository/references/evidence-capsule-v1.md
   .claude/skills/onboard-repository/references/evidence-capsule-v2.md
   .claude/skills/onboard-repository/references/boundary-edges.md
+  .claude/skills/onboard-repository/references/untracked-install.md
   .claude/skills/onboard-repository/scripts/emit_evidence_bundle.py
   .claude/skills/onboard-repository/scripts/render_patch.py
   docs/WORKFLOW.md

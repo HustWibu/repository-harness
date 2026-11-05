@@ -60,7 +60,8 @@ or background automation unless the user separately requests them.
 ### 1. Establish the boundary
 
 Read applicable instructions and the smallest repository map available. Record
-pre-existing dirt before doing anything else. If instructions conflict, follow
+pre-existing dirt before doing anything else. If this skill or a destination is
+untracked, read `references/untracked-install.md`. If instructions conflict, follow
 the narrower instruction and report the conflict.
 
 When `.harness-core/manifest.json` exists and an installed managed file
@@ -506,10 +507,9 @@ binary. A verified managed base contains newer instructions without that
 binary.
 
 The first pass follows the active root instructions, reports the unavailable
-binary, verifies the managed-base checksum, and leaves Git unchanged. Its patch
+binary and verifies the managed-base checksum. Its patch
 preview replaces only the stale managed block and links the existing E2E
-procedure. Any new cleanup rule is classified **Decision required**. It must not
-claim a new chat contract or add a universal startup script. After the user
+procedure. Any new cleanup rule is classified **Decision required**. After the user
 approves exact patch wording, the later pass applies it and produces a
 skill-free documentation patch for a fresh replay. Success is fewer
 undocumented hints and safer command ordering, not merely more documentation.
