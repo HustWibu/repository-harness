@@ -18,6 +18,7 @@ positive_paths=(
   docs/templates/harness-improvement.md
   docs/templates/session-handoff.md
   docs/templates/evaluator-rubric.md
+  docs/templates/interface-contract.md
   scripts/claude-harness-block.md
   scripts/harness-install-files.txt
   scripts/install-harness.sh

@@ -46,8 +46,8 @@ The default core contains:
 - repository context and navigation;
 - optional product, decision, and execution-plan locations;
 - optional templates for durable plans, decisions, application runbooks,
-  session handoffs, evaluator rubrics, and evidence-backed Harness
-  improvements; and
+  session handoffs, evaluator rubrics, cross-repository interface contracts,
+  and evidence-backed Harness improvements; and
 - an invariant-encoding reference and explicit-only Claude Code skills under
   `.claude/skills/` for discovery, audit, encoding, and improvement.
 

@@ -136,6 +136,11 @@ impl CoreDistributionPort for EmbeddedCoreDistribution {
             "docs/templates/evaluator-rubric.md",
             include_bytes!("../../../../docs/templates/evaluator-rubric.md"),
         )?;
+        add(
+            &mut files,
+            "docs/templates/interface-contract.md",
+            include_bytes!("../../../../docs/templates/interface-contract.md"),
+        )?;
         Ok(CoreDistribution {
             version: env!("CARGO_PKG_VERSION").to_owned(),
             files,

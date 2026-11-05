@@ -24,6 +24,16 @@ Out of scope:
 
 - Item.
 
+## Repositories Touched
+
+Optional. Use it when the work spans repositories. Keep this plan in one home
+repository: the shared specification repository if there is one, otherwise the
+repository with the most change. Other repositories link here and do not copy
+the plan.
+
+| Repository | Branch | Pull request or change | State | Evidence so far |
+| --- | --- | --- | --- | --- |
+
 ## Approach
 
 Describe the smallest coherent sequence. Update this section when evidence

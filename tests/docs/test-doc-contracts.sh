@@ -34,6 +34,7 @@ current_files=(
   docs/templates/harness-improvement.md
   docs/templates/session-handoff.md
   docs/templates/evaluator-rubric.md
+  docs/templates/interface-contract.md
   docs/decisions/0019-repository-centered-default-workflow.md
   docs/decisions/0020-installation-profile-and-knowledge-boundaries.md
   docs/decisions/0024-rust-harness-core-maintenance-cli.md
@@ -110,6 +111,10 @@ require docs/WORKFLOW.md 'Configuration checked into a repository may describe o
 require docs/templates/application-runbook.md '## Environments'
 require docs/templates/application-runbook.md 'a missing key is a finding to report'
 require docs/templates/evaluator-rubric.md '| Evidence scope |'
+require docs/templates/exec-plan.md '## Repositories Touched'
+require docs/templates/exec-plan.md 'Other repositories link here and do not copy'
+require docs/templates/session-handoff.md '## Repositories Touched'
+require docs/templates/interface-contract.md 'record the date each row was checked'
 
 # Payload docs are copied to every consumer; a path from one machine is wrong
 # everywhere else.

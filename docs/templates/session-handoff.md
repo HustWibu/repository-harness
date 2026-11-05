@@ -24,6 +24,18 @@ State in one sentence the observable outcome this work is driving toward.
 
 - Failing check, blocker, or unresolved question, with its owner if known.
 
+## Repositories Touched
+
+Optional. Use it when the work spans repositories; the plan's home repository
+holds the full table.
+
+| Repository | Branch | Pull request or change | State | Evidence so far |
+| --- | --- | --- | --- | --- |
+
+Unfinished work per repository:
+
+- Repository: what remains and where it starts.
+
 ## Next Step
 
 Name the single next action and the repository-native command or source that
