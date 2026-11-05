@@ -59,6 +59,16 @@ Advice cannot establish consumer policy or authorize an architecture rewrite.
 - `--remove-local-only`: delete only the marked block from
   `.git/info/exclude` and exit; installed files remain.
 
+## Shared Knowledge Hub
+
+A hub is a repository with the normal core install whose Related Repositories
+table lists member repositories by relative path (decision 0036).
+`harness hub sync` writes a marked pointer block into each member's
+`CLAUDE.md`; members receive no core files. It refuses members that are not
+Git repository roots or whose `CLAUDE.md` is a symlink, keeps text outside the
+markers, and never commits. `--dry-run` previews and `--check` exits 1 when a
+member is stale or unreachable.
+
 ## Update
 
 `harness update` verifies release identity and checksum, compares installed

@@ -1,4 +1,5 @@
 mod cli;
+mod hub_presenter;
 mod inspection_presenter;
 mod presenter;
 

@@ -22,9 +22,10 @@ is an available reference, not a required task step.
 | 0030 | Evidence-First Completion, Handoff, Rubric, And Gate Retirement (proposed) |
 | 0031 | Claude Code As The Only Agent Host (proposed) |
 | 0032 | Linux And macOS Only (proposed) |
-| 0033 | Multi-Repository Workspace Profile |
+| 0033 | Multi-Repository Workspace Profile (superseded by 0036) |
 | 0034 | Local-Only Installation |
 | 0035 | Multi-Repository Knowledge Surfaces |
+| 0036 | Shared Knowledge Hub (proposed) |
 
 These decisions describe upstream Harness. Installed consumers begin with an
 empty decision index and add only real consumer choices.

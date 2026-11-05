@@ -49,6 +49,7 @@ current_files=(
   docs/decisions/0033-multi-repository-workspace-profile.md
   docs/decisions/0034-local-only-installation.md
   docs/decisions/0035-multi-repository-knowledge-surfaces.md
+  docs/decisions/0036-shared-knowledge-hub.md
   docs/research/multi-repo-requirements.md
   docs/research/application-legibility.md
   docs/research/harness-gap-analysis.md
@@ -111,6 +112,8 @@ require docs/WORKFLOW.md 'evidence scope: in-repository, across a contract'
 require docs/WORKFLOW.md 'list its consumers under not verified'
 require docs/WORKFLOW.md 'Configuration checked into a repository may describe only a development'
 require docs/templates/application-runbook.md '## Environments'
+require docs/README.md '### Shared Knowledge Hub'
+require docs/product/installation-profiles.md '## Shared Knowledge Hub'
 require docs/templates/application-runbook.md 'a missing key is a finding to report'
 require docs/templates/evaluator-rubric.md '| Evidence scope |'
 require docs/templates/exec-plan.md '## Repositories Touched'

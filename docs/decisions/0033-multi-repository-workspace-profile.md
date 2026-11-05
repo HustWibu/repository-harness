@@ -1,8 +1,8 @@
 ---
-status: accepted
+status: superseded
 approved_by: "chiendv9"
 approved_at: "2026-11-05"
-superseded_by: ""
+superseded_by: "docs/decisions/0036-shared-knowledge-hub.md"
 ---
 
 # 0033 Multi-Repository Workspace Profile

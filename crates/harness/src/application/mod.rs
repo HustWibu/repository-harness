@@ -1,8 +1,10 @@
+mod hub;
 mod inspection;
 mod ports;
 mod self_update;
 mod service;
 
+pub use hub::*;
 pub use inspection::*;
 pub use ports::*;
 pub use self_update::*;
