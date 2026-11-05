@@ -8,6 +8,7 @@ workflow="$root/.github/workflows/post-merge-maintenance.yml"
 positive_paths=(
   crates/harness/src/main.rs
   crates/harness/assets/docs/plans/README.md
+  crates/harness/assets/docs/README.md
   .claude/skills/onboard-repository/SKILL.md
   .claude/skills/audit-onboarding-proposal/scripts/validate_evidence_capsule.py
   .claude/skills/encode-invariant/SKILL.md

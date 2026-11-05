@@ -63,6 +63,13 @@ impl CoreDistributionPort for EmbeddedCoreDistribution {
         )?;
         add(
             &mut files,
+            ".claude/skills/onboard-repository/references/untracked-install.md",
+            include_bytes!(
+                "../../../../.claude/skills/onboard-repository/references/untracked-install.md"
+            ),
+        )?;
+        add(
+            &mut files,
             ".claude/skills/onboard-repository/scripts/emit_evidence_bundle.py",
             include_bytes!(
                 "../../../../.claude/skills/onboard-repository/scripts/emit_evidence_bundle.py"
@@ -81,7 +88,7 @@ impl CoreDistributionPort for EmbeddedCoreDistribution {
         add(
             &mut files,
             "docs/README.md",
-            include_bytes!("../../../../docs/README.md"),
+            include_bytes!("../../assets/docs/README.md"),
         )?;
         add(
             &mut files,
@@ -203,6 +210,20 @@ mod tests {
             .find(|file| file.path.as_str() == "docs/plans/README.md")
             .unwrap();
         assert!(!String::from_utf8_lossy(&plans.content).contains("rust-harness-core"));
+        let map = distribution
+            .files
+            .iter()
+            .find(|file| file.path.as_str() == "docs/README.md")
+            .unwrap();
+        let map = String::from_utf8_lossy(&map.content);
+        assert!(!map.contains("crates/harness/") && !map.contains("ARCHITECTURE.md"));
+        for section in [
+            "## Related Repositories",
+            "### Shared Knowledge Hub",
+            "### Authority By Truth Type",
+        ] {
+            assert!(map.contains(section), "{section}");
+        }
         for skill in [
             ".claude/skills/onboard-repository/SKILL.md",
             ".claude/skills/audit-onboarding-proposal/SKILL.md",
