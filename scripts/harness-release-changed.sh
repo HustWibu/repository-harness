@@ -11,7 +11,7 @@ pattern+='docs/plans/active/README\.md$|docs/templates/(application-runbook|deci
 pattern+='scripts/(claude-harness-block\.md|harness-install-files\.txt|harness-release-tag)$|'
 pattern+='scripts/(install-harness|build-harness-release|harness-release-changed|promote-harness-release-tag|verify-harness-release-assets|verify-harness-release-identity)\.sh$|'
 pattern+='\.github/workflows/(harness-release|post-merge-maintenance)\.yml$|'
-pattern+='tests/installer/test-install-harness-modes\.sh$|'
+pattern+='tests/installer/test-install-(harness-modes|local-only)\.sh$|'
 pattern+='tests/maintenance/test-harness-release-classification\.sh$'
 pattern+=')'
 grep -Eq "$pattern"

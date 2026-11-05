@@ -22,6 +22,13 @@ Options:
       --override         On protected-path conflict, back up and replace
                          CLAUDE.md and docs/.
       --force            Overwrite existing files after backing them up.
+      --local-only       Keep the install out of git status: list every
+                         installed path in the target's .git/info/exclude.
+                         Requires a Git repository root; implies --merge and
+                         never changes tracked files (see below).
+      --remove-local-only
+                         Delete only the Harness lines from .git/info/exclude
+                         and exit; installed files are kept.
       --dry-run          Show what would change without writing files.
   -h, --help             Show this help.
 
@@ -35,6 +42,10 @@ Safety:
   stay in place and new Harness files are appended by path. Non-
   interactive installs stop unless --merge or --override is provided. If a
   target .gitignore receives only the Rust maintenance binary rules.
+  With --local-only, .gitignore is left alone and tracked files such as a
+  committed CLAUDE.md are skipped; --refresh-claude-shim still edits a tracked
+  CLAUDE.md and warns that the change shows in git status. Later installs and
+  harness update keep the exclude block current.
 
 Examples:
   scripts/install-harness.sh
@@ -476,7 +487,11 @@ install_harness_core() {
   if [ "$command_status" -eq 0 ] && [ "$DRY_RUN" -eq 0 ]; then
     mv -f "$binary_temp" "$binary_target"
     rm -rf "$TARGET_DIR/.harness-core/update-candidate"
-    merge_core_gitignore "$TARGET_DIR/.gitignore"
+    if [ "$LOCAL_ONLY" -eq 1 ]; then
+      log "skip     .gitignore (local-only install uses .git/info/exclude)"
+    else
+      merge_core_gitignore "$TARGET_DIR/.gitignore"
+    fi
     log "installed scripts/bin/harness ($CORE_PLATFORM)"
   elif [ -n "$binary_temp" ]; then
     rm -f "$binary_temp"
@@ -573,6 +588,83 @@ override_protected_target_paths() {
 
 }
 
+local_exclude_file() {
+  local exclude
+  exclude="$(git -C "$TARGET_DIR" rev-parse --git-path info/exclude)" || return 1
+  case "$exclude" in
+    /*) printf '%s\n' "$exclude" ;;
+    *) printf '%s\n' "$TARGET_DIR/$exclude" ;;
+  esac
+}
+
+require_git_root() {
+  local toplevel physical
+  [ -d "$TARGET_DIR" ] || fail "$1 requires an existing Git repository root; $TARGET_DIR does not exist"
+  toplevel="$(git -C "$TARGET_DIR" rev-parse --show-toplevel 2>/dev/null)" ||
+    fail "$1 requires a Git repository root; $TARGET_DIR is not inside a Git repository"
+  physical="$(cd "$TARGET_DIR" && pwd -P)"
+  [ "$(cd "$toplevel" && pwd -P)" = "$physical" ] ||
+    fail "$1 requires the Git repository root ($toplevel), not a subdirectory"
+}
+
+local_only_block_present() {
+  local exclude
+  exclude="$(local_exclude_file 2>/dev/null)" || return 1
+  [ -f "$exclude" ] && grep -Fxq "$LOCAL_ONLY_BEGIN" "$exclude"
+}
+
+ensure_local_only_block() {
+  local exclude
+  exclude="$(local_exclude_file)" || fail "could not locate .git/info/exclude"
+  if [ -f "$exclude" ] && grep -Fxq "$LOCAL_ONLY_BEGIN" "$exclude"; then
+    return 0
+  fi
+  if [ "$DRY_RUN" -eq 1 ]; then
+    log "update   .git/info/exclude (add Harness local-only block)"
+    return 0
+  fi
+  mkdir -p "$(dirname "$exclude")"
+  {
+    [ -s "$exclude" ] && [ -n "$(tail -c 1 "$exclude")" ] && printf '\n'
+    printf '%s\n%s\n' "$LOCAL_ONLY_BEGIN" "$LOCAL_ONLY_END"
+  } >> "$exclude"
+  log "updated  .git/info/exclude (added Harness local-only block)"
+}
+
+remove_local_only_block() {
+  local exclude tmp
+  exclude="$(local_exclude_file)" || fail "could not locate .git/info/exclude"
+  if [ ! -f "$exclude" ] || ! grep -Fxq "$LOCAL_ONLY_BEGIN" "$exclude"; then
+    log "skip     .git/info/exclude (no Harness local-only block)"
+    return 0
+  fi
+  grep -Fxq "$LOCAL_ONLY_END" "$exclude" ||
+    fail ".git/info/exclude has a Harness local-only block without its end marker; fix it by hand"
+  if [ "$DRY_RUN" -eq 1 ]; then
+    log "update   .git/info/exclude (remove Harness local-only block)"
+    return 0
+  fi
+  tmp="$(mktemp)"
+  awk -v begin="$LOCAL_ONLY_BEGIN" -v end="$LOCAL_ONLY_END" '
+    $0 == begin { inside = 1; next }
+    inside && $0 == end { inside = 0; next }
+    !inside { print }
+  ' "$exclude" > "$tmp"
+  cat "$tmp" > "$exclude"
+  rm -f "$tmp"
+  log "updated  .git/info/exclude (removed Harness local-only block; installed files kept)"
+}
+
+report_tracked_payload() {
+  local relative
+  { git -C "$TARGET_DIR" ls-files --cached |
+    grep -Fx -f <(read_payload_manifest "$PAYLOAD_MANIFEST" |
+      sed -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d') || true; } |
+    while IFS= read -r relative; do
+      log "skip     $relative (tracked; local-only leaves tracked files unchanged)"
+    done
+}
+
 install_engineering_wisdom() {
   [ "$INSTALL_ENGINEERING_WISDOM" -eq 1 ] || return 0
   copy_manifest_files "$ENGINEERING_WISDOM_PAYLOAD_MANIFEST"
@@ -584,6 +676,10 @@ FORCE=0
 DRY_RUN=0
 INSTALL_ENGINEERING_WISDOM=0
 REFRESH_CLAUDE_SHIM=0
+LOCAL_ONLY=0
+REMOVE_LOCAL_ONLY=0
+LOCAL_ONLY_BEGIN="# BEGIN harness local-only (managed by harness; do not edit)"
+LOCAL_ONLY_END="# END harness local-only"
 REQUESTED_CONFLICT_ACTION=""
 POSITIONAL_TARGET=""
 
@@ -620,6 +716,14 @@ while [ "$#" -gt 0 ]; do
       ;;
     --stop)
       REQUESTED_CONFLICT_ACTION="stop"
+      shift
+      ;;
+    --local-only)
+      LOCAL_ONLY=1
+      shift
+      ;;
+    --remove-local-only)
+      REMOVE_LOCAL_ONLY=1
       shift
       ;;
     --dry-run)
@@ -673,7 +777,7 @@ if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/../CLAUDE.md" ] && [ -f "$SCRIPT_DI
   SOURCE_MODE="local"
 fi
 
-if [ "$YES" -eq 0 ] && can_prompt; then
+if [ "$YES" -eq 0 ] && [ "$REMOVE_LOCAL_ONLY" -eq 0 ] && can_prompt; then
   prompt_tty "Install Harness v0 into [$TARGET_INPUT]: "
   REPLY_TARGET="$(read_tty)"
   if [ -n "$REPLY_TARGET" ]; then
@@ -682,6 +786,24 @@ if [ "$YES" -eq 0 ] && can_prompt; then
 fi
 
 TARGET_DIR="$(make_absolute_parent "$(expand_path "$TARGET_INPUT")")"
+
+if [ "$REMOVE_LOCAL_ONLY" -eq 1 ]; then
+  [ "$LOCAL_ONLY" -eq 0 ] || fail "--local-only and --remove-local-only cannot be combined"
+  require_git_root --remove-local-only
+  remove_local_only_block
+  exit 0
+fi
+if [ "$LOCAL_ONLY" -eq 1 ]; then
+  require_git_root --local-only
+elif [ -d "$TARGET_DIR" ] && local_only_block_present; then
+  LOCAL_ONLY=1
+fi
+if [ "$LOCAL_ONLY" -eq 1 ]; then
+  [ "$REQUESTED_CONFLICT_ACTION" != "override" ] ||
+    fail "--override would move tracked files; it cannot be combined with a local-only install"
+  [ "$FORCE" -eq 0 ] || fail "--force would overwrite tracked files; it cannot be combined with a local-only install"
+  [ -n "$REQUESTED_CONFLICT_ACTION" ] || REQUESTED_CONFLICT_ACTION="merge"
+fi
 BACKUP_DIR="$TARGET_DIR/.harness-backup/$(date +%Y%m%d%H%M%S)"
 CREATED=0
 UPDATED=0
@@ -722,11 +844,21 @@ else
   log "Engineering wisdom: excluded"
 fi
 log "Target project: $TARGET_DIR"
+if [ "$LOCAL_ONLY" -eq 1 ]; then
+  log "Local-only: installed paths go to .git/info/exclude"
+  ensure_local_only_block
+  report_tracked_payload
+fi
 
 install_harness_core
 
 install_engineering_wisdom
 refresh_claude_shim
+if [ "$LOCAL_ONLY" -eq 1 ] && [ "$REFRESH_CLAUDE_SHIM" -eq 1 ] && [ "$DRY_RUN" -eq 0 ] &&
+   git -C "$TARGET_DIR" ls-files --error-unmatch CLAUDE.md >/dev/null 2>&1 &&
+   ! git -C "$TARGET_DIR" diff --quiet -- CLAUDE.md; then
+  log "warning  CLAUDE.md is tracked; the Harness block change shows in git status"
+fi
 
 log ""
 log "Done. Created: $CREATED, updated: $UPDATED, skipped: $SKIPPED."

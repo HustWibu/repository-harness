@@ -2,6 +2,7 @@ mod claude_session_log;
 mod embedded_distribution;
 mod filesystem_state;
 mod git_merge;
+mod local_only;
 mod release_handoff;
 
 pub use claude_session_log::ClaudeSessionLog;

@@ -22,6 +22,7 @@ cargo clippy --workspace --all-targets --locked -- -D warnings
 tests/installer/assert-claude-authority-contract.sh
 tests/installer/assert-install-manifest-links.sh
 tests/installer/test-install-harness-modes.sh
+tests/installer/test-install-local-only.sh
 tests/installer/test-engineering-wisdom-opt-in.sh
 tests/docs/test-doc-contracts.sh
 tests/docs/test-context-budget.sh

@@ -46,6 +46,7 @@ current_files=(
   docs/decisions/0030-evidence-first-completion-and-handoff.md
   docs/decisions/0031-claude-code-only-host.md
   docs/decisions/0032-linux-and-macos-only.md
+  docs/decisions/0034-local-only-installation.md
   docs/decisions/0035-multi-repository-knowledge-surfaces.md
   docs/research/multi-repo-requirements.md
   docs/research/application-legibility.md
