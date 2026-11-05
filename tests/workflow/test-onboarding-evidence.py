@@ -34,8 +34,8 @@ class OnboardingEvidenceTests(unittest.TestCase):
             "commit", "--quiet", "-m", "Pin existing repository knowledge",
         ])
         self.revision = self.run_command(["git", "rev-parse", "HEAD"]).stdout.strip()
-        self.emitter = self.root / ".agents/skills/onboard-repository/scripts/emit_evidence_bundle.py"
-        self.validator = self.root / ".agents/skills/audit-onboarding-proposal/scripts/validate_evidence_capsule.py"
+        self.emitter = self.root / ".claude/skills/onboard-repository/scripts/emit_evidence_bundle.py"
+        self.validator = self.root / ".claude/skills/audit-onboarding-proposal/scripts/validate_evidence_capsule.py"
         self.before = self.snapshot()
         digest = hashlib.sha256(b"fixture boundary observation").hexdigest()
         self.spec = {
@@ -86,11 +86,14 @@ class OnboardingEvidenceTests(unittest.TestCase):
 
     def validate_transcript(self, bundle, expected=0, digest_override=None):
         events = [
-            {"type": "response_item", "payload": {
-                "type": "custom_tool_call_output", "output": bundle,
+            {"type": "user", "isSidechain": False, "message": {
+                "role": "user", "content": [{
+                    "type": "tool_result", "tool_use_id": "toolu_1", "content": bundle,
+                }],
             }},
-            {"type": "event_msg", "payload": {
-                "type": "task_complete", "last_agent_message": "No backfill proposed.",
+            {"type": "assistant", "isSidechain": False, "message": {
+                "role": "assistant", "stop_reason": "end_turn",
+                "content": [{"type": "text", "text": "No backfill proposed."}],
             }},
         ]
         raw = "".join(json.dumps(event) + "\n" for event in events).encode()
@@ -134,8 +137,8 @@ class OnboardingEvidenceTests(unittest.TestCase):
             }],
         }]
         self.spec["hunks"] = [{
-            "id": "H1", "destination": "AGENTS.md", "unknowns": [],
-            "after_text": (self.root / "AGENTS.md").read_text()
+            "id": "H1", "destination": "CLAUDE.md", "unknowns": [],
+            "after_text": (self.root / "CLAUDE.md").read_text()
                           + "\nSee [task status](src/status.sh).\n",
         }]
 
@@ -244,11 +247,14 @@ class OnboardingEvidenceTests(unittest.TestCase):
         self.assertIn("v1 claims must be a non-empty array", self.validate(
             message, expected=1).stderr)
 
-    def assert_explicit_skill_policy(self, metadata, skill):
-        self.assertEqual(metadata.count("allow_implicit_invocation:"), 1,
+    def assert_explicit_skill_policy(self, skill):
+        frontmatter = skill.split("---\n", 2)[1] if skill.startswith("---\n") else ""
+        policy = [line for line in frontmatter.splitlines()
+                  if line.startswith("disable-model-invocation:")]
+        self.assertEqual(len(policy), 1,
                          "skill must declare exactly one invocation policy")
-        self.assertIn("allow_implicit_invocation: false", metadata,
-                      "skill must require explicit user invocation")
+        self.assertEqual(policy[0], "disable-model-invocation: true",
+                         "skill must require explicit user invocation")
         description = next((line for line in skill.splitlines()
                             if line.startswith("description: ")), "")
         self.assertTrue(description.startswith(
@@ -256,34 +262,31 @@ class OnboardingEvidenceTests(unittest.TestCase):
                         "skill description must require explicit invocation")
 
     def test_installed_core_skills_require_explicit_invocation(self):
-        skills = self.root / ".agents/skills"
+        skills = self.root / ".claude/skills"
         self.assertEqual({path.name for path in skills.iterdir()}, {
             "onboard-repository", "audit-onboarding-proposal", "improve-harness",
             "encode-invariant",
         })
         for skill in skills.iterdir():
             with self.subTest(skill=skill.name):
-                self.assert_explicit_skill_policy(
-                    (skill / "agents/openai.yaml").read_text(),
-                    (skill / "SKILL.md").read_text(),
-                )
+                self.assert_explicit_skill_policy((skill / "SKILL.md").read_text())
 
     def test_implicit_invocation_policy_is_rejected(self):
-        metadata = "policy:\n  allow_implicit_invocation: true\n"
-        skill = "Use only when the user explicitly invokes `$example`."
+        skill = ("---\ndescription: Use only when the user explicitly invokes `/example`.\n"
+                 "disable-model-invocation: false\n---\n")
         with self.assertRaisesRegex(AssertionError, "require explicit user invocation"):
-            self.assert_explicit_skill_policy(metadata, skill)
+            self.assert_explicit_skill_policy(skill)
 
     def test_body_instruction_does_not_replace_explicit_description(self):
-        metadata = "policy:\n  allow_implicit_invocation: false\n"
-        skill = ("---\ndescription: Use when reviewing code.\n---\n"
-                 "Use only when the user explicitly invokes `$example`.")
+        skill = ("---\ndescription: Use when reviewing code.\n"
+                 "disable-model-invocation: true\n---\n"
+                 "Use only when the user explicitly invokes `/example`.")
         with self.assertRaisesRegex(AssertionError, "description must require"):
-            self.assert_explicit_skill_policy(metadata, skill)
+            self.assert_explicit_skill_policy(skill)
 
     def test_installed_context_has_no_forced_task_routing(self):
         context = "\n".join((self.root / path).read_text() for path in (
-            "AGENTS.md", "docs/WORKFLOW.md", "docs/plans/README.md",
+            "CLAUDE.md", "docs/WORKFLOW.md", "docs/plans/README.md",
             "docs/plans/active/README.md",
         ))
         for removed in (

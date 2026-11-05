@@ -1,19 +1,15 @@
 # Default Harness core payload embedded in the Rust `harness` binary.
 # Keep this profile generic, repository-centered, and free of hidden task state.
-.agents/skills/audit-onboarding-proposal/SKILL.md
-.agents/skills/audit-onboarding-proposal/agents/openai.yaml
-.agents/skills/audit-onboarding-proposal/scripts/validate_evidence_capsule.py
-.agents/skills/encode-invariant/SKILL.md
-.agents/skills/encode-invariant/agents/openai.yaml
-.agents/skills/improve-harness/SKILL.md
-.agents/skills/improve-harness/agents/openai.yaml
-.agents/skills/onboard-repository/SKILL.md
-.agents/skills/onboard-repository/agents/openai.yaml
-.agents/skills/onboard-repository/references/evidence-capsule-v1.md
-.agents/skills/onboard-repository/references/evidence-capsule-v2.md
-.agents/skills/onboard-repository/scripts/emit_evidence_bundle.py
-.agents/skills/onboard-repository/scripts/render_patch.py
-AGENTS.md
+.claude/skills/audit-onboarding-proposal/SKILL.md
+.claude/skills/audit-onboarding-proposal/scripts/validate_evidence_capsule.py
+.claude/skills/encode-invariant/SKILL.md
+.claude/skills/improve-harness/SKILL.md
+.claude/skills/onboard-repository/SKILL.md
+.claude/skills/onboard-repository/references/evidence-capsule-v1.md
+.claude/skills/onboard-repository/references/evidence-capsule-v2.md
+.claude/skills/onboard-repository/scripts/emit_evidence_bundle.py
+.claude/skills/onboard-repository/scripts/render_patch.py
+CLAUDE.md
 docs/WORKFLOW.md
 docs/README.md
 docs/patterns/encoding-invariants.md

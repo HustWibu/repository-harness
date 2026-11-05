@@ -14,6 +14,9 @@ Before changing externally observable policy, identify accepted repository
 authority. If materially different choices remain, stop and request the smallest
 decision. Code and tests show current behavior; configurable defaults are not
 authority for missing product policy.
+Configuration checked into a repository may describe only a development
+environment. Before concluding how an environment behaves, find its
+configuration source under Authority By Truth Type in `docs/README.md`.
 
 ## Missing Capabilities
 
@@ -22,7 +25,9 @@ or interface, running a command, preparing known state, observing an effect,
 verifying behavior, or recovering safely. Check the relevant implementation,
 commands, fixtures, logs, and environment rather than assuming they exist.
 Report an unavailable capability with its evidence and owning repository or
-external dependency. Keep unobserved state Unknown.
+external dependency. Keep unobserved state Unknown. When the answer belongs to
+another repository, name that owner from Related Repositories in
+`docs/README.md` rather than leaving an ownerless Unknown.
 
 Application commands, credentials, readiness, state ownership, and cleanup
 belong to the consumer repository. A template supplies structure, not proof
@@ -45,6 +50,12 @@ Work is done only when evidence matching the changed behavior was observed.
 Report three lists: verified, with the command or observation; not verified,
 with the reason; and known broken. Missing evidence means not verified, never
 done.
+
+Give each verified item its evidence scope: in-repository, across a contract,
+or on a deployed environment. When a change touches a contract and only
+in-repository evidence exists, list its consumers under not verified with the
+reason. The consumer repository decides the minimum scope for each kind of
+change.
 
 ## Optional Resources
 

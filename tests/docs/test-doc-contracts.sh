@@ -11,12 +11,12 @@ fail() {
 require() {
   local file=$1
   local text=$2
-  rg -Fq -- "$text" "$root/$file" || fail "$file omits: $text"
+  grep -Fq -- "$text" "$root/$file" || fail "$file omits: $text"
 }
 
 current_files=(
   README.md
-  AGENTS.md
+  CLAUDE.md
   docs/WORKFLOW.md
   docs/ARCHITECTURE.md
   docs/HARNESS.md
@@ -43,6 +43,10 @@ current_files=(
   docs/decisions/0028-authoritative-invariant-encoding.md
   docs/decisions/0029-measured-skills-context-budget-and-approval-frontmatter.md
   docs/decisions/0030-evidence-first-completion-and-handoff.md
+  docs/decisions/0031-claude-code-only-host.md
+  docs/decisions/0032-linux-and-macos-only.md
+  docs/decisions/0035-multi-repository-knowledge-surfaces.md
+  docs/research/multi-repo-requirements.md
   docs/research/application-legibility.md
   docs/research/harness-gap-analysis.md
   docs/research/harness-requirements-ideas.md
@@ -52,9 +56,9 @@ for file in "${current_files[@]}"; do
   [[ -f "$root/$file" ]] || fail "missing current artifact: $file"
 done
 
-require AGENTS.md 'Start with the requested outcome'
-require AGENTS.md 'configurable defaults are not authority'
-require AGENTS.md 'Only invoke a Harness skill when the user explicitly requests it.'
+require CLAUDE.md 'Start with the requested outcome'
+require CLAUDE.md 'configurable defaults are not authority'
+require CLAUDE.md 'Only invoke a Harness skill when the user explicitly requests it.'
 require docs/WORKFLOW.md '## Authority And Scope'
 require docs/WORKFLOW.md '## Missing Capabilities'
 require docs/WORKFLOW.md '## Trust Through Evidence'
@@ -96,8 +100,27 @@ for heading in 'Work Reviewed' Scores Verdict 'Required Changes'; do
   require docs/templates/evaluator-rubric.md "## $heading"
 done
 
+for heading in 'Related Repositories' 'Authority By Truth Type'; do
+  require docs/README.md "## $heading"
+done
+require docs/README.md 'never an absolute path from one'
+require docs/WORKFLOW.md 'evidence scope: in-repository, across a contract'
+require docs/WORKFLOW.md 'list its consumers under not verified'
+require docs/WORKFLOW.md 'Configuration checked into a repository may describe only a development'
+require docs/templates/application-runbook.md '## Environments'
+require docs/templates/application-runbook.md 'a missing key is a finding to report'
+require docs/templates/evaluator-rubric.md '| Evidence scope |'
+
+# Payload docs are copied to every consumer; a path from one machine is wrong
+# everywhere else.
+machine_path='(/Users/|/home/[A-Za-z]|~/)'
+[[ -n "$(printf 'see /home/alice/orders\n' | grep -E "$machine_path")" ]] ||
+  fail 'machine-path guard does not detect a home path'
 while IFS= read -r payload; do
   [[ -f "$root/$payload" ]] || fail "core manifest target is missing: $payload"
+  if [[ "$payload" == docs/*.md ]] && grep -nE "$machine_path" "$root/$payload" >&2; then
+    fail "$payload contains a machine-specific absolute path; use a URL or relative path"
+  fi
 done < <(sed -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' "$root/scripts/harness-install-files.txt")
 
 compatibility_paths=(
@@ -144,20 +167,19 @@ for gate in "${required_gates[@]}"; do
 done
 
 require .github/workflows/premerge.yml 'run: scripts/validate-premerge.sh'
-require .github/workflows/premerge.yml 'tests/installer/test-install-harness-modes.ps1'
 require .github/workflows/harness-release.yml 'run: scripts/validate-premerge.sh'
 
 # Every distributed skill ends with a machine-countable receipt line.
 while IFS= read -r skill; do
   name=$(basename "$(dirname "$skill")")
-  rg -Fq -- "HARNESS_SKILL: $name | done|stopped|skipped |" "$root/$skill" ||
+  grep -Fq -- "HARNESS_SKILL: $name | done|stopped|skipped |" "$root/$skill" ||
     fail "$skill omits its HARNESS_SKILL receipt instruction"
 done < <(cat "$root/scripts/harness-install-files.txt" \
   "$root/scripts/engineering-wisdom-install-files.txt" |
-  grep -E '^\.agents/skills/[^/]+/SKILL\.md$' | LC_ALL=C sort -u)
-require .agents/skills/encode-invariant/SKILL.md 'Missing frontmatter means not approved'
+  grep -E '^\.claude/skills/[^/]+/SKILL\.md$' | LC_ALL=C sort -u)
+require .claude/skills/encode-invariant/SKILL.md 'Missing frontmatter means not approved'
 
-"$root/tests/installer/assert-agent-authority-contract.sh" >/dev/null
+"$root/tests/installer/assert-claude-authority-contract.sh" >/dev/null
 "$root/tests/installer/assert-install-manifest-links.sh" >/dev/null
 
 echo "current product, EOL boundary, manifest, authority, and validation references passed"

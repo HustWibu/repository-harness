@@ -1,6 +1,8 @@
 # Installation Contract
 
-Harness has one product profile and one independent advisory add-on.
+Harness has one product profile and one independent advisory add-on. Claude
+Code is the only supported agent host (decision 0031), on Linux and macOS
+(decision 0032).
 
 ## Core
 
@@ -24,23 +26,27 @@ Core installation:
 
 ## Engineering Wisdom Add-On
 
-`--with-engineering-wisdom` or `-WithEngineeringWisdom` copies the
+`--with-engineering-wisdom` copies the
 explicit-only advisory skill declared in
 `scripts/engineering-wisdom-install-files.txt`.
 
 Omitting the flag does not install or activate the skill. A later install
 without the flag leaves an existing copy untouched. Removal is explicit and
-stateless: delete only `.agents/skills/engineering-wisdom/`.
+stateless: delete only `.claude/skills/engineering-wisdom/`.
 
 Advice cannot establish consumer policy or authorize an architecture rewrite.
 
 ## Merge And Override
 
-- `--merge` / `-Merge`: preserve existing files and add missing managed
+- `--merge`: preserve existing files and add missing managed
   paths.
-- `--override` / `-Override`: back up and replace protected Harness paths.
-- `--force` / `-Force`: overwrite individual managed files with backups.
-- `--dry-run` / `-DryRun`: preview without writing.
+- `--refresh-claude-shim`: append or refresh the marked
+  Harness block in an existing `CLAUDE.md` after a backup. Text outside the
+  markers is kept; malformed markers stop the install.
+- `--override`: back up and replace protected Harness paths
+  (`CLAUDE.md` and `docs/`).
+- `--force`: overwrite individual managed files with backups.
+- `--dry-run`: preview without writing.
 
 ## Update
 
@@ -58,3 +64,7 @@ succeed.
 The former `--with-cli`, `--upgrade-cli`, `-WithCli`, and `-UpgradeCli`
 profiles ended with protocol v1. Current installers reject those options.
 Existing consumer databases and binaries are not automatically deleted.
+
+The former `--claude` and `--refresh-agent-shim` options ended with the
+`AGENTS.md` entrypoint, and the PowerShell bootstrap ended with Windows support
+(decision 0032). The installer rejects the removed options.

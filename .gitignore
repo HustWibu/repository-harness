@@ -7,6 +7,5 @@ dist/
 
 # Downloaded Harness binaries for installed project instances.
 scripts/bin/harness
-scripts/bin/harness.exe
 scripts/bin/harness-v0-migrate
 harness.db.bk

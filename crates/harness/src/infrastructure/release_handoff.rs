@@ -339,7 +339,6 @@ fn candidate_artifact() -> Result<&'static str, PortError> {
         ("macos", "x86_64") => Ok("harness-macos-x64"),
         ("linux", "aarch64") => Ok("harness-linux-arm64"),
         ("linux", "x86_64") => Ok("harness-linux-x64"),
-        ("windows", "x86_64") => Ok("harness-windows-x64.exe"),
         (os, arch) => Err(PortError::new(format!(
             "unsupported Harness update platform: {os}/{arch}"
         ))),
@@ -347,11 +346,7 @@ fn candidate_artifact() -> Result<&'static str, PortError> {
 }
 
 fn candidate_filename() -> &'static str {
-    if cfg!(windows) {
-        "harness.exe"
-    } else {
-        "harness"
-    }
+    "harness"
 }
 
 fn persisted_root(root: &Path) -> PathBuf {

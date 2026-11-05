@@ -16,8 +16,7 @@ expected=$(printf '%s\n' \
   harness-linux-arm64 harness-linux-arm64.sha256 \
   harness-linux-x64 harness-linux-x64.sha256 \
   harness-macos-arm64 harness-macos-arm64.sha256 \
-  harness-macos-x64 harness-macos-x64.sha256 \
-  harness-windows-x64.exe harness-windows-x64.exe.sha256)
+  harness-macos-x64 harness-macos-x64.sha256)
 actual=$(find "$artifact_dir" -maxdepth 1 -type f -exec basename {} \; | LC_ALL=C sort)
 
 if [[ "$actual" != "$expected" ]]; then
@@ -26,4 +25,4 @@ if [[ "$actual" != "$expected" ]]; then
   exit 1
 fi
 
-echo "Harness core release artifact inventory passed: 5 binaries and 5 checksums"
+echo "Harness core release artifact inventory passed: 4 binaries and 4 checksums"

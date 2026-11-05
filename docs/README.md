@@ -20,6 +20,8 @@ Start with the smallest authoritative surface.
 - `research/`: exploratory notes, not product authority or release gates.
   `harness-gap-analysis.md` and `harness-requirements-ideas.md` (Vietnamese)
   compare this harness with the Learn Harness Engineering course.
+  `multi-repo-requirements.md` (Vietnamese) holds the multi-repository
+  requirements behind the optional Related Repositories surfaces.
 - `templates/`: optional decision, plan, runbook, session-handoff,
   evaluator-rubric, and Harness-improvement structures. The decision template
   carries checkable approval frontmatter.
@@ -29,6 +31,32 @@ Start with the smallest authoritative surface.
 The consumer's README, product documents, architecture, code, tests, CI,
 runtime signals, and application behavior remain authoritative. Harness does
 not overwrite those with upstream product assumptions.
+
+## Related Repositories
+
+Optional. Fill this in when some truth this repository depends on lives in
+another repository, as in a multi-repository or microservice system. Leave it
+empty for a single repository; nothing else changes.
+
+| Repository | Role for this repository | Location |
+| --- | --- | --- |
+
+Role is one of: contract, environment configuration, specification, shared
+library, or another named role. Location is a URL or a path relative to this
+repository, such as `../orders-service`; never an absolute path from one
+machine.
+
+### Authority By Truth Type
+
+Each truth type has exactly one source of record. Every other copy only points
+to it, and an agent treats a disagreeing copy as a finding, not as authority.
+
+| Truth type | Source repository | Path in that repository |
+| --- | --- | --- |
+| Interface contract | | |
+| Configuration for an environment | | |
+| Requirements | | |
+| Cross-repository progress | | |
 
 ## Source Repository
 

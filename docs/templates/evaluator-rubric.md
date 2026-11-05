@@ -24,6 +24,7 @@ Score each criterion 0, 1, or 2 and cite the evidence for the score.
 | Safety | Breaks state or a boundary | Unstated risk | Preserves boundaries | | |
 | Authority | Invents policy | Unstated assumption | Cites accepted authority | | |
 | Honest report | Overclaims | Omits unverified parts | States verified and unverified | | |
+| Evidence scope | Unstated | Stated for some claims | Each verified claim says in-repository, across a contract, or deployed | | |
 
 ## Verdict
 

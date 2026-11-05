@@ -14,8 +14,6 @@ labels: pattern-request, needs-triage
 ## Which agent/tool should this help?
 
 - [ ] Claude Code
-- [ ] Codex
-- [ ] Cursor
 - [ ] Other:
 
 ## What should the agent know before changing code?

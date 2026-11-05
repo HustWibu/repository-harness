@@ -40,7 +40,7 @@ while IFS=$'\t' read -r kind target max _reason; do
   esac
 done <"$budget"
 
-default_skill=$(limit_for bytes '.agents/skills/*/SKILL.md')
+default_skill=$(limit_for bytes '.claude/skills/*/SKILL.md')
 description_max=$(limit_for chars skill-description)
 [[ -n "$default_skill" && -n "$description_max" ]] || {
   echo "ERROR: $budget must define the skill default and skill-description limits" >&2
@@ -49,7 +49,7 @@ description_max=$(limit_for chars skill-description)
 
 skills=$(cat "$root/scripts/harness-install-files.txt" \
   "$root/scripts/engineering-wisdom-install-files.txt" |
-  grep -E '^\.agents/skills/[^/]+/SKILL\.md$' | LC_ALL=C sort -u)
+  grep -E '^\.claude/skills/[^/]+/SKILL\.md$' | LC_ALL=C sort -u)
 for skill in $skills; do
   max=$(limit_for bytes "$skill")
   max=${max:-$default_skill}

@@ -2,8 +2,9 @@
 """Extract and structurally validate an onboarding evidence capsule.
 
 The validator is intentionally read-only and uses only the Python standard
-library. It authenticates a Codex JSONL transcript when requested, extracts the
-last completed assistant message, and validates the capsule schema. For v2 it
+library. It authenticates a Claude Code session JSONL transcript when
+requested, extracts the last completed assistant message, and validates the
+capsule schema. For v2 it
 also verifies pinned Git blobs and applies each marked patch in memory to check
 whole-destination before/after digests.
 """
@@ -511,34 +512,41 @@ def transcript_message(
             event = json.loads(line)
         except json.JSONDecodeError as exc:
             raise CapsuleError(f"transcript line {line_number} is invalid JSON: {exc}") from exc
-        if event.get("type") == "event_msg" and event.get("payload", {}).get("type") == "task_complete":
-            message = event["payload"].get("last_agent_message")
-            if isinstance(message, str):
-                completed.append((line_number, message))
-        payload = event.get("payload", {})
-        if event.get("type") == "response_item" and payload.get("type") == "message" and payload.get("role") == "assistant":
+        if not isinstance(event, dict) or event.get("isSidechain") is True:
+            continue
+        message = event.get("message")
+        if not isinstance(message, dict):
+            continue
+        content = message.get("content")
+        if event.get("type") == "assistant" and isinstance(content, list):
             text = "".join(
                 item.get("text", "")
-                for item in payload.get("content", [])
-                if isinstance(item, dict)
+                for item in content
+                if isinstance(item, dict) and item.get("type") == "text"
             )
             if text:
                 assistant_messages.append(text)
-        if event.get("type") == "response_item" and payload.get("type") == "custom_tool_call_output":
-            output = payload.get("output")
-            if isinstance(output, str):
-                output_text = output
-            elif isinstance(output, list):
-                output_text = "".join(
-                    item.get("text", "")
-                    for item in output
-                    if isinstance(item, dict)
-                    and item.get("type") in {"input_text", "output_text"}
-                )
-            else:
-                output_text = ""
-            if BUNDLE_BEGIN_RE.search(output_text) or BUNDLE_END in output_text:
-                machine_outputs.append((line_number, output_text))
+                # Claude Code marks the final assistant record of a turn with
+                # stop_reason "end_turn"; that record is the completed answer.
+                if message.get("stop_reason") == "end_turn":
+                    completed.append((line_number, text))
+        if event.get("type") == "user" and isinstance(content, list):
+            for item in content:
+                if not isinstance(item, dict) or item.get("type") != "tool_result":
+                    continue
+                output = item.get("content")
+                if isinstance(output, str):
+                    output_text = output
+                elif isinstance(output, list):
+                    output_text = "".join(
+                        part.get("text", "")
+                        for part in output
+                        if isinstance(part, dict) and part.get("type") == "text"
+                    )
+                else:
+                    output_text = ""
+                if BUNDLE_BEGIN_RE.search(output_text) or BUNDLE_END in output_text:
+                    machine_outputs.append((line_number, output_text))
     if completed:
         last_complete_line, completed_message = completed[-1]
         eligible_bundles = [
@@ -557,12 +565,12 @@ def self_test() -> None:
     zeros = "0" * 64
     ones = "1" * 64
     revision = "a" * 40
-    patch = "--- a/AGENTS.md\n+++ b/AGENTS.md\n@@\n-old\n+new\n"
+    patch = "--- a/CLAUDE.md\n+++ b/CLAUDE.md\n@@\n-old\n+new\n"
     patch_sha = sha256_bytes(patch.encode())
     capsule = {
         "schema": SCHEMA_V1,
         "tested_repository": {"root": "/tmp/repo", "revision": revision, "branch": "test"},
-        "producer_skill": {"path": ".agents/skills/onboard-repository/SKILL.md", "sha256": zeros},
+        "producer_skill": {"path": ".claude/skills/onboard-repository/SKILL.md", "sha256": zeros},
         "boundary": [
             {"id": "B1", "kind": "git", "initial_evidence_sha256": zeros, "final_evidence_sha256": zeros, "result": "Pass", "notes": []},
             {"id": "B2", "kind": "ignored_or_managed", "initial_evidence_sha256": ones, "final_evidence_sha256": ones, "result": "Pass", "notes": []},
@@ -575,7 +583,7 @@ def self_test() -> None:
             ]}
         ],
         "hunks": [
-            {"id": "H1", "destination": "AGENTS.md", "boundary": "managed marker", "before_sha256": zeros, "after_sha256": ones, "patch_sha256": patch_sha, "claim_ids": ["C1"], "unknowns": []}
+            {"id": "H1", "destination": "CLAUDE.md", "boundary": "managed marker", "before_sha256": zeros, "after_sha256": ones, "patch_sha256": patch_sha, "claim_ids": ["C1"], "unknowns": []}
         ],
         "limitations": ["runtime unobservable"],
     }

@@ -1,6 +1,7 @@
 ---
 name: improve-harness
-description: Use only when the user explicitly invokes `$improve-harness`. Test one authorized improvement to repository guidance or capabilities against an observed baseline and a fresh rerun. Do not infer permission from ordinary work or automatically reflect after tasks.
+description: Use only when the user explicitly invokes `/improve-harness`. Test one authorized improvement to repository guidance or capabilities against an observed baseline and a fresh rerun. Do not infer permission from ordinary work or automatically reflect after tasks.
+disable-model-invocation: true
 ---
 
 # Improve Harness
@@ -11,7 +12,7 @@ rerun before claiming improvement.
 
 ## Establish Authority
 
-- Read `AGENTS.md`, `docs/WORKFLOW.md`, and applicable local instructions.
+- Read `CLAUDE.md`, `docs/WORKFLOW.md`, and applicable local instructions.
 - Confirm the request authorizes changing Harness behavior. Inspection or a
   request to report friction does not authorize edits.
 - Record the initial repository root, revision, branch, status, and unrelated

@@ -35,6 +35,19 @@ Describe how to exercise the relevant browser, API, CLI, worker, or service.
 Give retrieval commands for logs, traces, errors, and correlation identifiers.
 Distinguish guaranteed fields from optional ones.
 
+## Environments
+
+Optional. Use it when runtime configuration lives outside this repository or
+differs by environment. Record structure from evidence; leave a cell empty
+rather than guess.
+
+| Environment | Configuration source | How it is deployed | Log and metric source |
+| --- | --- | --- | --- |
+
+To verify behavior for an environment, run with that environment's
+configuration and replace only hosts and secrets. Do not add a missing key to
+make it start; a missing key is a finding to report.
+
 ## Ownership And Cleanup
 
 Explain how to identify resources created by this run and stop only those

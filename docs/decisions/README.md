@@ -20,6 +20,9 @@ is an available reference, not a required task step.
 | 0028 | Authoritative Invariant Encoding |
 | 0029 | Measured Skills, Context Budget, And Approval Frontmatter (proposed) |
 | 0030 | Evidence-First Completion, Handoff, Rubric, And Gate Retirement (proposed) |
+| 0031 | Claude Code As The Only Agent Host (proposed) |
+| 0032 | Linux And macOS Only (proposed) |
+| 0035 | Multi-Repository Knowledge Surfaces |
 
 These decisions describe upstream Harness. Installed consumers begin with an
 empty decision index and add only real consumer choices.

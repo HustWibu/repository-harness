@@ -287,7 +287,7 @@ def self_test() -> None:
     revision = "a" * 40
     zeros = "0" * 64
     blobs = {
-        (revision, ".agents/skills/onboard-repository/SKILL.md"): b"skill\n",
+        (revision, ".claude/skills/onboard-repository/SKILL.md"): b"skill\n",
         (revision, "docs/source.md"): b"authority\nsecond\n",
         (revision, "docs/test.md"): b"old\n",
     }
@@ -331,7 +331,7 @@ def self_test() -> None:
         root="/tmp/repository",
         revision=revision,
         branch="test",
-        producer_skill_path=".agents/skills/onboard-repository/SKILL.md",
+        producer_skill_path=".claude/skills/onboard-repository/SKILL.md",
         read_blob=read_blob,
     )
     header = f"<!-- ONBOARDING_EVIDENCE_BUNDLE_V2:BEGIN sha256={digest} -->\n"
@@ -349,7 +349,7 @@ def main() -> int:
     parser.add_argument("--branch")
     parser.add_argument(
         "--producer-skill-path",
-        default=".agents/skills/onboard-repository/SKILL.md",
+        default=".claude/skills/onboard-repository/SKILL.md",
     )
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()

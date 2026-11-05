@@ -11,8 +11,6 @@ wisdom="$temp/wisdom"
 
 [[ "$(grep -Fc 'PAYLOAD_MANIFEST="scripts/harness-install-files.txt"' "$root/scripts/install-harness.sh")" == 1 ]]
 [[ "$(grep -Fc 'ENGINEERING_WISDOM_PAYLOAD_MANIFEST="scripts/engineering-wisdom-install-files.txt"' "$root/scripts/install-harness.sh")" == 1 ]]
-[[ "$(grep -Fc '$script:PayloadManifest = "scripts/harness-install-files.txt"' "$root/scripts/install-harness.ps1")" == 1 ]]
-[[ "$(grep -Fc '$script:EngineeringWisdomPayloadManifest = "scripts/engineering-wisdom-install-files.txt"' "$root/scripts/install-harness.ps1")" == 1 ]]
 
 python3 - "$root" "$core_manifest" "$wisdom_manifest" <<'PY'
 import pathlib

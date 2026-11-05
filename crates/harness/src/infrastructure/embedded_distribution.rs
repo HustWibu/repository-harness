@@ -9,84 +9,62 @@ pub struct EmbeddedCoreDistribution;
 impl CoreDistributionPort for EmbeddedCoreDistribution {
     fn current(&self) -> Result<CoreDistribution, PortError> {
         let mut files = Vec::new();
-        let agent_block = include_bytes!("../../../../scripts/agent-harness-block.md");
-        let mut agents = b"# Agent Instructions\n\n".to_vec();
-        agents.extend_from_slice(agent_block);
-        add(&mut files, "AGENTS.md", &agents)?;
+        let claude_block = include_bytes!("../../../../scripts/claude-harness-block.md");
+        let mut claude = b"# Project Rules\n\n".to_vec();
+        claude.extend_from_slice(claude_block);
+        add(&mut files, "CLAUDE.md", &claude)?;
         add(
             &mut files,
-            ".agents/skills/audit-onboarding-proposal/SKILL.md",
-            include_bytes!("../../../../.agents/skills/audit-onboarding-proposal/SKILL.md"),
+            ".claude/skills/audit-onboarding-proposal/SKILL.md",
+            include_bytes!("../../../../.claude/skills/audit-onboarding-proposal/SKILL.md"),
         )?;
         add(
             &mut files,
-            ".agents/skills/audit-onboarding-proposal/agents/openai.yaml",
+            ".claude/skills/audit-onboarding-proposal/scripts/validate_evidence_capsule.py",
             include_bytes!(
-                "../../../../.agents/skills/audit-onboarding-proposal/agents/openai.yaml"
+                "../../../../.claude/skills/audit-onboarding-proposal/scripts/validate_evidence_capsule.py"
             ),
         )?;
         add(
             &mut files,
-            ".agents/skills/audit-onboarding-proposal/scripts/validate_evidence_capsule.py",
+            ".claude/skills/encode-invariant/SKILL.md",
+            include_bytes!("../../../../.claude/skills/encode-invariant/SKILL.md"),
+        )?;
+        add(
+            &mut files,
+            ".claude/skills/improve-harness/SKILL.md",
+            include_bytes!("../../../../.claude/skills/improve-harness/SKILL.md"),
+        )?;
+        add(
+            &mut files,
+            ".claude/skills/onboard-repository/SKILL.md",
+            include_bytes!("../../../../.claude/skills/onboard-repository/SKILL.md"),
+        )?;
+        add(
+            &mut files,
+            ".claude/skills/onboard-repository/references/evidence-capsule-v1.md",
             include_bytes!(
-                "../../../../.agents/skills/audit-onboarding-proposal/scripts/validate_evidence_capsule.py"
+                "../../../../.claude/skills/onboard-repository/references/evidence-capsule-v1.md"
             ),
         )?;
         add(
             &mut files,
-            ".agents/skills/encode-invariant/SKILL.md",
-            include_bytes!("../../../../.agents/skills/encode-invariant/SKILL.md"),
-        )?;
-        add(
-            &mut files,
-            ".agents/skills/encode-invariant/agents/openai.yaml",
-            include_bytes!("../../../../.agents/skills/encode-invariant/agents/openai.yaml"),
-        )?;
-        add(
-            &mut files,
-            ".agents/skills/improve-harness/SKILL.md",
-            include_bytes!("../../../../.agents/skills/improve-harness/SKILL.md"),
-        )?;
-        add(
-            &mut files,
-            ".agents/skills/improve-harness/agents/openai.yaml",
-            include_bytes!("../../../../.agents/skills/improve-harness/agents/openai.yaml"),
-        )?;
-        add(
-            &mut files,
-            ".agents/skills/onboard-repository/SKILL.md",
-            include_bytes!("../../../../.agents/skills/onboard-repository/SKILL.md"),
-        )?;
-        add(
-            &mut files,
-            ".agents/skills/onboard-repository/agents/openai.yaml",
-            include_bytes!("../../../../.agents/skills/onboard-repository/agents/openai.yaml"),
-        )?;
-        add(
-            &mut files,
-            ".agents/skills/onboard-repository/references/evidence-capsule-v1.md",
+            ".claude/skills/onboard-repository/references/evidence-capsule-v2.md",
             include_bytes!(
-                "../../../../.agents/skills/onboard-repository/references/evidence-capsule-v1.md"
+                "../../../../.claude/skills/onboard-repository/references/evidence-capsule-v2.md"
             ),
         )?;
         add(
             &mut files,
-            ".agents/skills/onboard-repository/references/evidence-capsule-v2.md",
+            ".claude/skills/onboard-repository/scripts/emit_evidence_bundle.py",
             include_bytes!(
-                "../../../../.agents/skills/onboard-repository/references/evidence-capsule-v2.md"
+                "../../../../.claude/skills/onboard-repository/scripts/emit_evidence_bundle.py"
             ),
         )?;
         add(
             &mut files,
-            ".agents/skills/onboard-repository/scripts/emit_evidence_bundle.py",
-            include_bytes!(
-                "../../../../.agents/skills/onboard-repository/scripts/emit_evidence_bundle.py"
-            ),
-        )?;
-        add(
-            &mut files,
-            ".agents/skills/onboard-repository/scripts/render_patch.py",
-            include_bytes!("../../../../.agents/skills/onboard-repository/scripts/render_patch.py"),
+            ".claude/skills/onboard-repository/scripts/render_patch.py",
+            include_bytes!("../../../../.claude/skills/onboard-repository/scripts/render_patch.py"),
         )?;
         add(
             &mut files,
@@ -196,16 +174,17 @@ mod tests {
             .filter(|line| !line.is_empty() && !line.starts_with('#'))
             .collect::<std::collections::BTreeSet<_>>();
         assert_eq!(embedded_paths, manifest_paths);
-        let agents = distribution
+        let claude = distribution
             .files
             .iter()
-            .find(|file| file.path.as_str() == "AGENTS.md")
+            .find(|file| file.path.as_str() == "CLAUDE.md")
             .unwrap();
-        let agents = String::from_utf8(agents.content.clone()).unwrap();
+        let claude = String::from_utf8(claude.content.clone()).unwrap();
         assert!(
-            agents.contains("Only invoke a Harness skill when the user explicitly requests it.")
+            claude.contains("Only invoke a Harness skill when the user explicitly requests it.")
         );
-        assert!(!agents.contains("Current Upstream Goal"));
+        assert!(!claude.contains("AGENTS.md"));
+        assert!(!claude.contains("Current Upstream Goal"));
         let plans = distribution
             .files
             .iter()
@@ -213,10 +192,10 @@ mod tests {
             .unwrap();
         assert!(!String::from_utf8_lossy(&plans.content).contains("rust-harness-core"));
         for skill in [
-            ".agents/skills/onboard-repository/SKILL.md",
-            ".agents/skills/audit-onboarding-proposal/SKILL.md",
-            ".agents/skills/encode-invariant/SKILL.md",
-            ".agents/skills/improve-harness/SKILL.md",
+            ".claude/skills/onboard-repository/SKILL.md",
+            ".claude/skills/audit-onboarding-proposal/SKILL.md",
+            ".claude/skills/encode-invariant/SKILL.md",
+            ".claude/skills/improve-harness/SKILL.md",
         ] {
             let skill = distribution
                 .files
@@ -225,20 +204,7 @@ mod tests {
                 .unwrap();
             let skill = String::from_utf8_lossy(&skill.content);
             assert!(skill.contains("authorized") || skill.contains("read-only"));
-        }
-        for metadata in [
-            ".agents/skills/onboard-repository/agents/openai.yaml",
-            ".agents/skills/audit-onboarding-proposal/agents/openai.yaml",
-            ".agents/skills/improve-harness/agents/openai.yaml",
-            ".agents/skills/encode-invariant/agents/openai.yaml",
-        ] {
-            let metadata = distribution
-                .files
-                .iter()
-                .find(|file| file.path.as_str() == metadata)
-                .unwrap();
-            assert!(String::from_utf8_lossy(&metadata.content)
-                .contains("allow_implicit_invocation: false"));
+            assert!(skill.contains("\ndisable-model-invocation: true\n"));
         }
     }
 }

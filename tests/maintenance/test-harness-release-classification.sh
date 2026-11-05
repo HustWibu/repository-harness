@@ -8,20 +8,19 @@ workflow="$root/.github/workflows/post-merge-maintenance.yml"
 positive_paths=(
   crates/harness/src/main.rs
   crates/harness/assets/docs/plans/README.md
-  .agents/skills/onboard-repository/SKILL.md
-  .agents/skills/audit-onboarding-proposal/scripts/validate_evidence_capsule.py
-  .agents/skills/encode-invariant/SKILL.md
-  .agents/skills/improve-harness/SKILL.md
+  .claude/skills/onboard-repository/SKILL.md
+  .claude/skills/audit-onboarding-proposal/scripts/validate_evidence_capsule.py
+  .claude/skills/encode-invariant/SKILL.md
+  .claude/skills/improve-harness/SKILL.md
   docs/WORKFLOW.md
   docs/patterns/encoding-invariants.md
   docs/templates/application-runbook.md
   docs/templates/harness-improvement.md
   docs/templates/session-handoff.md
   docs/templates/evaluator-rubric.md
-  scripts/agent-harness-block.md
+  scripts/claude-harness-block.md
   scripts/harness-install-files.txt
   scripts/install-harness.sh
-  scripts/install-harness.ps1
   scripts/build-harness-release.sh
   scripts/harness-release-changed.sh
   scripts/promote-harness-release-tag.sh
