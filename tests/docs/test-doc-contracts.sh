@@ -50,6 +50,7 @@ current_files=(
   docs/decisions/0034-local-only-installation.md
   docs/decisions/0035-multi-repository-knowledge-surfaces.md
   docs/decisions/0036-shared-knowledge-hub.md
+  docs/decisions/0037-onboarding-from-a-hub.md
   docs/research/multi-repo-requirements.md
   docs/research/application-legibility.md
   docs/research/harness-gap-analysis.md
@@ -130,6 +131,8 @@ require .claude/skills/onboard-repository/SKILL.md 'read `references/boundary-ed
 require .claude/skills/onboard-repository/references/boundary-edges.md '**unconfirmed** when only this repository'
 require .claude/skills/onboard-repository/references/boundary-edges.md 'Never clone or fetch a'
 require .claude/skills/onboard-repository/SKILL.md 'read `references/untracked-install.md`'
+require .claude/skills/onboard-repository/references/boundary-edges.md '## Onboarding From A Hub'
+require .claude/skills/onboard-repository/references/evidence-capsule-v2.md 'adds `"repository": "<name>"`'
 require .claude/skills/onboard-repository/references/untracked-install.md 'unavailable: untracked install'
 
 # Payload docs are copied to every consumer; a path from one machine is wrong

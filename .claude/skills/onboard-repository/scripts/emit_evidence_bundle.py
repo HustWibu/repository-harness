@@ -22,6 +22,7 @@ CAPSULE_BEGIN = "<!-- ONBOARDING_EVIDENCE_CAPSULE_V2:BEGIN -->"
 CAPSULE_END = "<!-- ONBOARDING_EVIDENCE_CAPSULE_V2:END -->"
 REVISION_RE = re.compile(r"^[0-9a-f]{40}$")
 ID_RE = re.compile(r"^[A-Z][A-Z0-9_-]*$")
+ID_NAME_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 CLASSIFICATIONS = {"Authoritative", "Observed", "Derived"}
 SOURCE_ROLES = {"authority", "implementation", "configuration", "test", "boundary"}
 BOUNDARY_KINDS = {"git", "ignored_or_managed", "runtime", "temporary_paths"}
@@ -78,6 +79,47 @@ def git_blob_reader(repository: Path) -> Callable[[str, str], bytes]:
     return read_blob
 
 
+RELATED_ROW_RE = re.compile(r"^\|\s*`?([A-Za-z0-9._-]+)`?\s*\|[^|]*\|\s*`?([^|`]+?)`?\s*\|$")
+
+
+def related_repository(root: Path, map_blob: bytes, name: str, context: str) -> Path:
+    """Resolve a source repository named in the pinned Related Repositories table."""
+    text = map_blob.decode("utf-8", errors="replace")
+    _, found, rest = text.partition("## Related Repositories\n")
+    require(found != "", f"{context}: pinned docs/README.md has no Related Repositories section")
+    for line in rest.split("\n#", 1)[0].splitlines():
+        match = RELATED_ROW_RE.match(line.strip())
+        if not match or match.group(1) != name:
+            continue
+        location = match.group(2).strip()
+        require("://" not in location and not location.startswith(("/", "~")),
+                f"{context}: {name} must have a relative Location")
+        candidate = (root / location).resolve()
+        result = subprocess.run(
+            ["git", "-C", str(candidate), "rev-parse", "--show-toplevel"],
+            check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        )
+        require(result.returncode == 0 and Path(result.stdout.strip()).resolve() == candidate,
+                f"{context}: {name} is not a Git repository root at {location}")
+        return candidate
+    raise BundleError(f"{context}: {name} is not listed under Related Repositories")
+
+
+def related_blob_reader(
+    repository: Path, revision: str, read_blob: Callable[[str, str], bytes]
+) -> Callable[[str, str, str], bytes]:
+    roots: dict[str, Path] = {}
+
+    def read_related(name: str, source_revision: str, path: str) -> bytes:
+        if name not in roots:
+            roots[name] = related_repository(
+                repository, read_blob(revision, "docs/README.md"), name, f"repository {name}"
+            )
+        return git_blob_reader(roots[name])(source_revision, path)
+
+    return read_related
+
+
 def exact_source_bytes(blob: bytes, start_line: int, end_line: int, context: str) -> bytes:
     lines = blob.splitlines(keepends=True)
     require(start_line > 0, f"{context}.start_line must be positive")
@@ -131,6 +173,7 @@ def build_bundle(
     branch: str,
     producer_skill_path: str,
     read_blob: Callable[[str, str], bytes],
+    read_related: Callable[[str, str, str], bytes] | None = None,
 ) -> tuple[str, str]:
     require_exact_keys(spec, {"boundary", "claims", "hunks", "limitations"}, "spec")
     require(root.startswith("/"), "repository root must be absolute")
@@ -168,7 +211,7 @@ def build_bundle(
         for source_index, source in enumerate(sources_input):
             source_context = f"{context}.sources[{source_index}]"
             require(isinstance(source, dict), f"{source_context}: expected object")
-            allowed = {"path", "start_line", "end_line", "role", "revision"}
+            allowed = {"path", "start_line", "end_line", "role", "revision", "repository"}
             require(set(source) <= allowed, f"{source_context}: unsupported keys")
             require({"path", "start_line", "end_line", "role"} <= set(source),
                     f"{source_context}: missing required keys")
@@ -179,14 +222,25 @@ def build_bundle(
             require(isinstance(source["start_line"], int) and isinstance(source["end_line"], int),
                     f"{source_context}: line bounds must be integers")
             require(source["role"] in SOURCE_ROLES, f"{source_context}.role is unsupported")
+            related = source.get("repository")
+            if related is not None:
+                # Another repository's revision never defaults to the tested one.
+                require(isinstance(related, str) and ID_NAME_RE.fullmatch(related) is not None,
+                        f"{source_context}.repository is invalid")
+                require("revision" in source, f"{source_context}.revision is required with repository")
+                require(read_related is not None, f"{source_context}: no related repository reader")
+                blob = read_related(related, source_revision, source["path"])
+            else:
+                blob = read_blob(source_revision, source["path"])
             source_bytes = exact_source_bytes(
-                read_blob(source_revision, source["path"]),
+                blob,
                 source["start_line"],
                 source["end_line"],
                 source_context,
             )
             sources.append(
-                {
+                ({"repository": related} if related is not None else {})
+                | {
                     "revision": source_revision,
                     "path": source["path"],
                     "start_line": source["start_line"],
@@ -317,7 +371,9 @@ def self_test() -> None:
                 "text": "Use new guidance.",
                 "classification": "Authoritative",
                 "sources": [
-                    {"path": "docs/source.md", "start_line": 1, "end_line": 1, "role": "authority"}
+                    {"path": "docs/source.md", "start_line": 1, "end_line": 1, "role": "authority"},
+                    {"repository": "orders", "revision": "b" * 40, "path": "src/App.java",
+                     "start_line": 2, "end_line": 2, "role": "implementation"},
                 ],
             }
         ],
@@ -326,6 +382,11 @@ def self_test() -> None:
         ],
         "limitations": ["self-test"],
     }
+    def read_related(name: str, test_revision: str, path: str) -> bytes:
+        require((name, test_revision, path) == ("orders", "b" * 40, "src/App.java"),
+                f"unexpected related read: {name} {path}")
+        return b"class App {\n  topic();\n}\n"
+
     bundle, digest = build_bundle(
         spec=spec,
         root="/tmp/repository",
@@ -333,6 +394,7 @@ def self_test() -> None:
         branch="test",
         producer_skill_path=".claude/skills/onboard-repository/SKILL.md",
         read_blob=read_blob,
+        read_related=read_related,
     )
     header = f"<!-- ONBOARDING_EVIDENCE_BUNDLE_V2:BEGIN sha256={digest} -->\n"
     require(bundle.startswith(header), "self-test bundle header is invalid")
@@ -340,6 +402,19 @@ def self_test() -> None:
     require(sha256_bytes(inner.encode("utf-8")) == digest, "self-test bundle digest is invalid")
     require(sha256_bytes(b"authority\n") in bundle, "self-test source hash was not computed")
     require("<!-- ONBOARDING_PATCH:H1:BEGIN -->" in bundle, "self-test patch is missing")
+    require(sha256_bytes(b"  topic();\n") in bundle and '"repository": "orders"' in bundle,
+            "self-test related source was not pinned")
+    try:
+        build_bundle(spec={**spec, "claims": [{**spec["claims"][0], "sources": [
+            {"repository": "orders", "path": "src/App.java", "start_line": 1,
+             "end_line": 1, "role": "implementation"}]}]},
+            root="/tmp/repository", revision=revision, branch="test",
+            producer_skill_path=".claude/skills/onboard-repository/SKILL.md",
+            read_blob=read_blob, read_related=read_related)
+    except BundleError:
+        pass
+    else:
+        raise BundleError("a related source without its own revision was accepted")
 
 
 def main() -> int:
@@ -381,6 +456,9 @@ def main() -> int:
             branch=args.branch,
             producer_skill_path=args.producer_skill_path,
             read_blob=git_blob_reader(repository),
+            read_related=related_blob_reader(
+                repository, args.revision, git_blob_reader(repository)
+            ),
         )
         sys.stdout.write(bundle)
         return 0
