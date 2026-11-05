@@ -45,6 +45,8 @@ current_files=(
   docs/decisions/0030-evidence-first-completion-and-handoff.md
   docs/decisions/0031-claude-code-only-host.md
   docs/decisions/0032-linux-and-macos-only.md
+  docs/decisions/0035-multi-repository-knowledge-surfaces.md
+  docs/research/multi-repo-requirements.md
   docs/research/application-legibility.md
   docs/research/harness-gap-analysis.md
   docs/research/harness-requirements-ideas.md
@@ -98,8 +100,27 @@ for heading in 'Work Reviewed' Scores Verdict 'Required Changes'; do
   require docs/templates/evaluator-rubric.md "## $heading"
 done
 
+for heading in 'Related Repositories' 'Authority By Truth Type'; do
+  require docs/README.md "## $heading"
+done
+require docs/README.md 'never an absolute path from one'
+require docs/WORKFLOW.md 'evidence scope: in-repository, across a contract'
+require docs/WORKFLOW.md 'list its consumers under not verified'
+require docs/WORKFLOW.md 'Configuration checked into a repository may describe only a development'
+require docs/templates/application-runbook.md '## Environments'
+require docs/templates/application-runbook.md 'a missing key is a finding to report'
+require docs/templates/evaluator-rubric.md '| Evidence scope |'
+
+# Payload docs are copied to every consumer; a path from one machine is wrong
+# everywhere else.
+machine_path='(/Users/|/home/[A-Za-z]|~/)'
+[[ -n "$(printf 'see /home/alice/orders\n' | grep -E "$machine_path")" ]] ||
+  fail 'machine-path guard does not detect a home path'
 while IFS= read -r payload; do
   [[ -f "$root/$payload" ]] || fail "core manifest target is missing: $payload"
+  if [[ "$payload" == docs/*.md ]] && grep -nE "$machine_path" "$root/$payload" >&2; then
+    fail "$payload contains a machine-specific absolute path; use a URL or relative path"
+  fi
 done < <(sed -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' "$root/scripts/harness-install-files.txt")
 
 compatibility_paths=(
