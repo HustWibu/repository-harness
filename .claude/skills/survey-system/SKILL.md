@@ -73,15 +73,14 @@ asked again.
 
 Pipe `<repository> <path> <start> <end>` lines for every cited range to
 `scripts/pin_sources.py --hub <hub>` and place each marker as the page shapes
-show; never compute or copy a digest by hand. Before proposing, verify:
-
-1. every member in scope has exactly one page, and nothing out of scope has one;
-2. matrix counts per status recompute from the matrix rows;
-3. no `MATCHED` row lacks a source on each side;
-4. every earlier recorded answer is present verbatim;
-5. no bare `<TODO: verify>` marker remains.
-
-Fix and recheck once; if a check still fails, stop and report it.
+show; never compute or copy a digest by hand. Before proposing, pipe the
+drafts as a JSON object of hub path to page text into
+`scripts/check_pages.py --members <a,b,c> --previous docs/system/overview.md`.
+It fails when a member in scope lacks exactly one page, counts do not
+recompute from the matrix, a `MATCHED` row lacks a source on either side, a
+status is outside the closed set, an earlier answer changed, a TODO marker has
+no question, or a marker is malformed. Fix and rerun once; if it still fails,
+stop and report its output. Report its verdict with the proposal.
 
 ## 8. Propose, Then Write
 

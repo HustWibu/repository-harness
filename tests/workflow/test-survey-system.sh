@@ -7,6 +7,8 @@ harness="$root/target/debug/harness"
 fail() { echo "survey-system test failed: $*" >&2; exit 1; }
 
 python3 -B "$pin" --self-test >/dev/null || fail "self-test"
+python3 -B "$root/.claude/skills/survey-system/scripts/check_pages.py" --self-test >/dev/null ||
+  fail "page checker self-test"
 [[ -x "$harness" ]] || cargo build --quiet --manifest-path "$root/Cargo.toml"
 
 work=$(mktemp -d)

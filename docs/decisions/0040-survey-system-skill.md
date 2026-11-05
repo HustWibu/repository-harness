@@ -39,9 +39,11 @@ Ship an explicit `/survey-system` skill in the core payload:
 6. `scripts/pin_sources.py` prints `harness-source` markers for cited ranges at
    each member's HEAD, with the same digest as the onboarding emitter and
    `hub check-fresh`; digests are never typed by hand.
-7. Before proposing, it checks one page per member in scope, counts that
-   recompute from the matrix, `MATCHED` rows sourced on both sides, earlier
-   answers kept verbatim, and no bare TODO markers.
+7. Before proposing, `scripts/check_pages.py` checks the drafts: one page per
+   member in scope, counts that recompute from the matrix, `MATCHED` rows
+   sourced on both sides, statuses from the closed set, earlier answers kept
+   verbatim, TODO markers with a question, and well-formed markers. The first
+   trial run could check the last two only by eye.
 
 It describes the current system only: no design, plan, or workflow stage.
 

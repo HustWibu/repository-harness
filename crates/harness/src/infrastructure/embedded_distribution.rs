@@ -97,6 +97,11 @@ impl CoreDistributionPort for EmbeddedCoreDistribution {
         )?;
         add(
             &mut files,
+            ".claude/skills/survey-system/scripts/check_pages.py",
+            include_bytes!("../../../../.claude/skills/survey-system/scripts/check_pages.py"),
+        )?;
+        add(
+            &mut files,
             "docs/WORKFLOW.md",
             include_bytes!("../../../../docs/WORKFLOW.md"),
         )?;

@@ -74,6 +74,7 @@ payloads=(
   .claude/skills/survey-system/SKILL.md
   .claude/skills/survey-system/references/page-shapes.md
   .claude/skills/survey-system/scripts/pin_sources.py
+  .claude/skills/survey-system/scripts/check_pages.py
   docs/WORKFLOW.md
   docs/README.md
   docs/patterns/encoding-invariants.md
