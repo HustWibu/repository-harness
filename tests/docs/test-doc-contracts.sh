@@ -51,6 +51,7 @@ current_files=(
   docs/decisions/0035-multi-repository-knowledge-surfaces.md
   docs/decisions/0036-shared-knowledge-hub.md
   docs/decisions/0037-onboarding-from-a-hub.md
+  docs/decisions/0038-release-from-this-fork.md
   docs/research/multi-repo-requirements.md
   docs/research/application-legibility.md
   docs/research/harness-gap-analysis.md

@@ -52,9 +52,9 @@ Examples:
   scripts/install-harness.sh --directory /path/to/project --yes
   scripts/install-harness.sh --directory /path/to/project --with-engineering-wisdom --yes
   scripts/install-harness.sh ./my-project --force
-  curl -fsSL https://raw.githubusercontent.com/hoangnb24/repository-harness/main/scripts/install-harness.sh | bash -s -- --yes
-  curl -fsSL https://raw.githubusercontent.com/hoangnb24/repository-harness/main/scripts/install-harness.sh | bash -s -- --merge --yes
-  curl -fsSL https://raw.githubusercontent.com/hoangnb24/repository-harness/main/scripts/install-harness.sh | bash -s -- --merge --refresh-claude-shim --yes
+  curl -fsSL https://raw.githubusercontent.com/HustWibu/repository-harness/main/scripts/install-harness.sh | bash -s -- --yes
+  curl -fsSL https://raw.githubusercontent.com/HustWibu/repository-harness/main/scripts/install-harness.sh | bash -s -- --merge --yes
+  curl -fsSL https://raw.githubusercontent.com/HustWibu/repository-harness/main/scripts/install-harness.sh | bash -s -- --merge --refresh-claude-shim --yes
 EOF
 }
 
@@ -423,7 +423,7 @@ stage_harness_core_cli() {
     fi
     [[ "$release_tag" =~ ^harness-v[0-9]+\.[0-9]+\.[0-9]+([.-][A-Za-z0-9]+)*$ ]] ||
       fail "invalid Harness core release tag: $release_tag"
-    base_url="${HARNESS_CORE_CLI_BASE_URL:-https://github.com/hoangnb24/repository-harness/releases/download/$release_tag}"
+    base_url="${HARNESS_CORE_CLI_BASE_URL:-https://github.com/HustWibu/repository-harness/releases/download/$release_tag}"
     binary_url="${base_url%/}/$CORE_BINARY_NAME"
     checksum_url="$binary_url.sha256"
     checksum_tmp="$CORE_STAGE_ROOT/$CORE_BINARY_NAME.sha256"
@@ -765,9 +765,9 @@ SCRIPT_PATH="${BASH_SOURCE[0]:-$0}"
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" 2>/dev/null && pwd -P || printf '')"
 SOURCE_ROOT=""
 SOURCE_MODE="remote"
-SOURCE_BASE_URL="${HARNESS_SOURCE_BASE_URL:-https://raw.githubusercontent.com/hoangnb24/repository-harness/main}"
+SOURCE_BASE_URL="${HARNESS_SOURCE_BASE_URL:-https://raw.githubusercontent.com/HustWibu/repository-harness/main}"
 SOURCE_BASE_URL="${SOURCE_BASE_URL%/}"
-CORE_SOURCE_BASE_URL="${HARNESS_CORE_SOURCE_BASE_URL:-https://raw.githubusercontent.com/hoangnb24/repository-harness/main}"
+CORE_SOURCE_BASE_URL="${HARNESS_CORE_SOURCE_BASE_URL:-https://raw.githubusercontent.com/HustWibu/repository-harness/main}"
 CORE_SOURCE_BASE_URL="${CORE_SOURCE_BASE_URL%/}"
 PAYLOAD_MANIFEST="scripts/harness-install-files.txt"
 ENGINEERING_WISDOM_PAYLOAD_MANIFEST="scripts/engineering-wisdom-install-files.txt"

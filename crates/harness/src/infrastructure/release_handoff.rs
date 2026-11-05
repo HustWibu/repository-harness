@@ -9,9 +9,9 @@ use sha2::{Digest, Sha256};
 use crate::application::{CandidateExit, CandidateRequest, PortError, UpdateCandidatePort};
 
 const RELEASE_TAG_URL: &str =
-    "https://raw.githubusercontent.com/hoangnb24/repository-harness/main/scripts/harness-release-tag";
+    "https://raw.githubusercontent.com/HustWibu/repository-harness/main/scripts/harness-release-tag";
 const RELEASE_DOWNLOAD_ROOT: &str =
-    "https://github.com/hoangnb24/repository-harness/releases/download";
+    "https://github.com/HustWibu/repository-harness/releases/download";
 
 pub struct LatestReleaseCandidates {
     test_release_root: Option<String>,
