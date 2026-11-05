@@ -10,6 +10,9 @@ keep the sections below that apply.
   and evidence.
 - `product/`, `decisions/`, `plans/`: optional homes for product behavior,
   lasting choices, and plans the user or consumer workflow asks for.
+- [`patterns/multi-repository-evidence.md`](patterns/multi-repository-evidence.md):
+  source markers checked by `hub check-fresh`, contract statuses, counts that
+  reconcile, scope honesty, and open questions across repositories.
 - [`patterns/encoding-invariants.md`](patterns/encoding-invariants.md): turn
   accepted architecture, reliability, security, and quality rules into native
   mechanical validation.

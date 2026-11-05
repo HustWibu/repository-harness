@@ -97,6 +97,11 @@ impl CoreDistributionPort for EmbeddedCoreDistribution {
         )?;
         add(
             &mut files,
+            "docs/patterns/multi-repository-evidence.md",
+            include_bytes!("../../../../docs/patterns/multi-repository-evidence.md"),
+        )?;
+        add(
+            &mut files,
             "docs/product/README.md",
             include_bytes!("../../../../docs/product/README.md"),
         )?;

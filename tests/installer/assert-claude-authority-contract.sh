@@ -74,6 +74,7 @@ payloads=(
   docs/WORKFLOW.md
   docs/README.md
   docs/patterns/encoding-invariants.md
+  docs/patterns/multi-repository-evidence.md
   docs/product/README.md
   docs/plans/README.md
   docs/plans/active/README.md

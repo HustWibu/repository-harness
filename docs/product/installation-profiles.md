@@ -71,7 +71,10 @@ member is stale or unreachable, or when the hub lacks its
 `docs/services/<repository>/`. `--workspace` writes one block into the
 `CLAUDE.md` of the directory holding the hub instead, naming the hub by
 absolute path, and only checks members; it refuses when that directory is
-inside a Git repository.
+inside a Git repository, and lists workspace repositories the hub does not.
+`harness hub check-fresh` re-reads every `harness-source` marker in the hub's
+`docs/` at the member's HEAD and exits 1 when cited lines changed
+(decision 0039).
 
 ## Update
 

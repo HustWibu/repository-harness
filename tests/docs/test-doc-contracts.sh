@@ -52,6 +52,7 @@ current_files=(
   docs/decisions/0036-shared-knowledge-hub.md
   docs/decisions/0037-onboarding-from-a-hub.md
   docs/decisions/0038-release-from-this-fork.md
+  docs/decisions/0039-hub-knowledge-freshness-and-cross-repository-evidence.md
   docs/research/multi-repo-requirements.md
   docs/research/application-legibility.md
   docs/research/harness-gap-analysis.md
@@ -117,6 +118,12 @@ require docs/templates/application-runbook.md '## Environments'
 require docs/README.md '### Shared Knowledge Hub'
 require docs/product/installation-profiles.md '## Shared Knowledge Hub'
 require docs/README.md 'hub sync --workspace'
+require docs/patterns/multi-repository-evidence.md '<!-- harness-source: '
+require docs/patterns/multi-repository-evidence.md '`harness hub check-fresh`'
+require docs/patterns/multi-repository-evidence.md 'never write `MATCHED` from one side'
+require docs/patterns/multi-repository-evidence.md '<TODO: verify — one concrete'
+require docs/WORKFLOW.md 'correctness and safety follow the'
+require docs/patterns/encoding-invariants.md 'A gate that waits for a person runs on prompt submission'
 require docs/product/installation-profiles.md '`--workspace` writes one block'
 require docs/templates/application-runbook.md 'a missing key is a finding to report'
 require docs/templates/evaluator-rubric.md '| Evidence scope |'

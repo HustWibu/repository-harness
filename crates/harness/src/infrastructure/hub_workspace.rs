@@ -2,7 +2,9 @@ use std::fs;
 use std::path::{Component, Path, PathBuf};
 use std::process::Command;
 
-use crate::application::{HubWorkspacePort, MemberCheckout, PortError, WorkspaceCheckout};
+use crate::application::{
+    HubWorkspacePort, MemberCheckout, MemberSource, PortError, WorkspaceCheckout,
+};
 
 #[derive(Clone, Copy, Default)]
 pub struct FileSystemHubWorkspace;
@@ -74,6 +76,82 @@ impl HubWorkspacePort for FileSystemHubWorkspace {
         })
     }
 
+    fn workspace_repositories(&self, root: &Path) -> Result<Vec<String>, PortError> {
+        let mut names = Vec::new();
+        for entry in fs::read_dir(root)
+            .map_err(|error| PortError::new(format!("{}: {error}", root.display())))?
+        {
+            let path = entry
+                .map_err(|error| PortError::new(error.to_string()))?
+                .path();
+            // Hidden directories hold worktrees and tool state, not members.
+            let hidden = path
+                .file_name()
+                .is_some_and(|name| name.to_string_lossy().starts_with('.'));
+            if hidden || !path.join(".git").exists() || !path.is_dir() {
+                continue;
+            }
+            let toplevel = git(&path, &["rev-parse", "--show-toplevel"]);
+            if toplevel.and_then(|top| canonical(Path::new(&top)).ok()) == canonical(&path).ok() {
+                if let Some(name) = path.file_name() {
+                    names.push(name.to_string_lossy().into_owned());
+                }
+            }
+        }
+        names.sort();
+        Ok(names)
+    }
+
+    fn knowledge_pages(&self, hub: &Path) -> Result<Vec<(String, String)>, PortError> {
+        let mut pages = Vec::new();
+        let mut pending = vec![hub.join("docs")];
+        while let Some(dir) = pending.pop() {
+            let entries = match fs::read_dir(&dir) {
+                Ok(entries) => entries,
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
+                Err(error) => return Err(PortError::new(format!("{}: {error}", dir.display()))),
+            };
+            for entry in entries {
+                let entry = entry.map_err(|error| PortError::new(error.to_string()))?;
+                let kind = entry
+                    .file_type()
+                    .map_err(|error| PortError::new(error.to_string()))?;
+                let path = entry.path();
+                if kind.is_dir() {
+                    pending.push(path);
+                } else if kind.is_file() && path.extension().is_some_and(|ext| ext == "md") {
+                    let text = fs::read_to_string(&path)
+                        .map_err(|error| PortError::new(format!("{}: {error}", path.display())))?;
+                    let relative = path.strip_prefix(hub).unwrap_or(&path);
+                    pages.push((relative.to_string_lossy().replace('\\', "/"), text));
+                }
+            }
+        }
+        pages.sort();
+        Ok(pages)
+    }
+
+    fn member_source(
+        &self,
+        member: &Path,
+        revision: &str,
+        path: &str,
+    ) -> Result<MemberSource, PortError> {
+        let show = |spec: String| {
+            Command::new("git")
+                .args(["show", &spec])
+                .current_dir(member)
+                .output()
+                .ok()
+                .filter(|output| output.status.success())
+                .map(|output| output.stdout)
+        };
+        Ok((
+            show(format!("{revision}:{path}")),
+            show(format!("HEAD:{path}")),
+        ))
+    }
+
     fn read_claude(&self, member: &Path) -> Result<Option<String>, PortError> {
         let path = claude_path(member)?;
         match fs::read_to_string(&path) {
@@ -109,6 +187,19 @@ fn claude_path(member: &Path) -> Result<PathBuf, PortError> {
         ))),
         _ => Ok(path),
     }
+}
+
+fn git(dir: &Path, args: &[&str]) -> Option<String> {
+    let output = Command::new("git")
+        .args(args)
+        .current_dir(dir)
+        .output()
+        .ok()?;
+    output.status.success().then(|| {
+        String::from_utf8_lossy(&output.stdout)
+            .trim_end()
+            .to_owned()
+    })
 }
 
 fn canonical(path: &Path) -> Result<PathBuf, PortError> {

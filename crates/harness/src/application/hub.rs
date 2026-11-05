@@ -5,7 +5,8 @@ use std::path::{Path, PathBuf};
 
 use crate::application::PortError;
 use crate::domain::{
-    apply_hub_block, parse_hub_members, render_hub_block, render_workspace_block, HubMapError,
+    apply_hub_block, assess, parse_hub_members, render_hub_block, render_workspace_block,
+    source_markers, Freshness, HubMapError,
 };
 
 /// A member repository resolved on disk.
@@ -25,6 +26,9 @@ pub struct WorkspaceCheckout {
     pub hub_path: String,
 }
 
+/// A member file at the pinned revision and at HEAD; `None` where unreadable.
+pub type MemberSource = (Option<Vec<u8>>, Option<Vec<u8>>);
+
 pub trait HubWorkspacePort {
     /// Contents of the hub's `docs/README.md`.
     fn read_hub_map(&self, hub: &Path) -> Result<String, PortError>;
@@ -34,6 +38,17 @@ pub trait HubWorkspacePort {
     fn resolve_member(&self, hub: &Path, location: &str) -> Result<MemberCheckout, PortError>;
     /// The hub's parent directory, which must not be inside a Git repository.
     fn resolve_workspace(&self, hub: &Path) -> Result<WorkspaceCheckout, PortError>;
+    /// Git repository roots directly inside the workspace directory, by name.
+    fn workspace_repositories(&self, root: &Path) -> Result<Vec<String>, PortError>;
+    /// Markdown pages under the hub's `docs/`, as (hub-relative path, text).
+    fn knowledge_pages(&self, hub: &Path) -> Result<Vec<(String, String)>, PortError>;
+    /// A member file at `revision` and at HEAD; `None` where it cannot be read.
+    fn member_source(
+        &self,
+        member: &Path,
+        revision: &str,
+        path: &str,
+    ) -> Result<MemberSource, PortError>;
     fn read_claude(&self, member: &Path) -> Result<Option<String>, PortError>;
     fn write_claude(&self, member: &Path, content: &str) -> Result<(), PortError>;
 }
@@ -75,6 +90,36 @@ pub struct HubReport {
     pub members: Vec<MemberReport>,
     /// Set by `--workspace`, which writes the workspace file instead of members.
     pub workspace: Option<WorkspaceReport>,
+    /// Git repositories in the workspace that Related Repositories does not
+    /// list; reported so a missing member is never silent.
+    pub unlisted: Vec<String>,
+}
+
+#[derive(Clone, Debug)]
+pub struct SourceCheck {
+    pub page: String,
+    pub line: usize,
+    /// `repository:path#Lstart-Lend`, or the raw marker when it is malformed.
+    pub source: String,
+    pub outcome: Result<Freshness, String>,
+}
+
+#[derive(Clone, Debug)]
+pub struct FreshnessReport {
+    pub pages: usize,
+    pub sources: Vec<SourceCheck>,
+}
+
+impl FreshnessReport {
+    /// Moved lines still say the same thing; only changed or unreadable fail.
+    pub fn ok(&self) -> bool {
+        self.sources.iter().all(|check| {
+            matches!(
+                check.outcome,
+                Ok(Freshness::Current) | Ok(Freshness::Moved(_))
+            )
+        })
+    }
 }
 
 impl HubReport {
@@ -129,6 +174,7 @@ impl<W: HubWorkspacePort> HubApplication<W> {
             mode,
             members,
             workspace: None,
+            unlisted: Vec::new(),
         })
     }
 
@@ -137,7 +183,7 @@ impl<W: HubWorkspacePort> HubApplication<W> {
     pub fn sync_workspace(&self, hub: &Path, mode: HubMode) -> Result<HubReport, HubError> {
         let members = parse_hub_members(&self.workspace.read_hub_map(hub)?)?;
         let workspace = self.workspace.resolve_workspace(hub)?;
-        let members = members
+        let members: Vec<MemberReport> = members
             .into_iter()
             .map(|member| {
                 let outcome = self
@@ -157,13 +203,81 @@ impl<W: HubWorkspacePort> HubApplication<W> {
                 mode,
             )
             .unwrap_or_else(|error| MemberOutcome::Failed(error.to_string()));
+        let hub_name = hub_dir_name(&workspace.hub_path);
+        let listed = members
+            .iter()
+            .map(|member| last_segment(&member.location))
+            .collect::<Vec<_>>();
+        let unlisted = self
+            .workspace
+            .workspace_repositories(&workspace.root)?
+            .into_iter()
+            .filter(|name| *name != hub_name && !listed.contains(name))
+            .collect();
         Ok(HubReport {
             mode,
             members,
+            unlisted,
             workspace: Some(WorkspaceReport {
                 path: workspace.root.join("CLAUDE.md").display().to_string(),
                 outcome,
             }),
+        })
+    }
+
+    /// Check every source marker in the hub's pages against member HEADs.
+    pub fn check_fresh(&self, hub: &Path) -> Result<FreshnessReport, HubError> {
+        let members = parse_hub_members(&self.workspace.read_hub_map(hub)?)?;
+        let pages = self.workspace.knowledge_pages(hub)?;
+        let mut sources = Vec::new();
+        for (page, text) in &pages {
+            for (line, marker) in source_markers(text) {
+                let check = |source: String, outcome| SourceCheck {
+                    page: page.clone(),
+                    line,
+                    source,
+                    outcome,
+                };
+                let marker = match marker {
+                    Ok(marker) => marker,
+                    Err(reason) => {
+                        sources.push(check(
+                            text.lines().nth(line - 1).unwrap_or("").trim().to_owned(),
+                            Err(reason),
+                        ));
+                        continue;
+                    }
+                };
+                let label = format!(
+                    "{}:{}#L{}-L{}",
+                    marker.repository, marker.path, marker.start_line, marker.end_line
+                );
+                let outcome = members
+                    .iter()
+                    .find(|member| member.name == marker.repository)
+                    .ok_or_else(|| {
+                        format!(
+                            "{} is not listed under Related Repositories",
+                            marker.repository
+                        )
+                    })
+                    .and_then(|member| {
+                        let checkout = self
+                            .workspace
+                            .resolve_member(hub, &member.location)
+                            .map_err(|error| error.to_string())?;
+                        let (pinned, head) = self
+                            .workspace
+                            .member_source(&checkout.root, &marker.revision, &marker.path)
+                            .map_err(|error| error.to_string())?;
+                        Ok(assess(&marker, pinned.as_deref(), head.as_deref()))
+                    });
+                sources.push(check(label, outcome));
+            }
+        }
+        Ok(FreshnessReport {
+            pages: pages.len(),
+            sources,
         })
     }
 
@@ -235,6 +349,18 @@ impl<W: HubWorkspacePort> HubApplication<W> {
     }
 }
 
+fn last_segment(path: &str) -> String {
+    path.trim_end_matches('/')
+        .rsplit(['/', '\\'])
+        .next()
+        .unwrap_or(path)
+        .to_owned()
+}
+
+fn hub_dir_name(hub_path: &str) -> String {
+    last_segment(hub_path)
+}
+
 #[cfg(test)]
 mod tests {
     use std::cell::RefCell;
@@ -245,6 +371,7 @@ mod tests {
     struct Fixture {
         map: String,
         claude: RefCell<BTreeMap<PathBuf, String>>,
+        pages: Vec<(String, String)>,
     }
 
     impl HubWorkspacePort for Fixture {
@@ -261,6 +388,23 @@ mod tests {
             Ok(MemberCheckout {
                 root: PathBuf::from("/w").join(location.trim_start_matches("../")),
                 hub_from_member: "../hub".to_owned(),
+            })
+        }
+        fn workspace_repositories(&self, _root: &Path) -> Result<Vec<String>, PortError> {
+            Ok(vec!["hub".into(), "orders".into(), "stray".into()])
+        }
+        fn knowledge_pages(&self, _hub: &Path) -> Result<Vec<(String, String)>, PortError> {
+            Ok(self.pages.clone())
+        }
+        fn member_source(
+            &self,
+            _member: &Path,
+            _revision: &str,
+            path: &str,
+        ) -> Result<MemberSource, PortError> {
+            Ok(match path {
+                "src/Same.java" => (Some(b"a\nb\n".to_vec()), Some(b"a\nb\n".to_vec())),
+                _ => (Some(b"a\nb\n".to_vec()), Some(b"a\nc\n".to_vec())),
             })
         }
         fn resolve_workspace(&self, _hub: &Path) -> Result<WorkspaceCheckout, PortError> {
@@ -287,6 +431,7 @@ mod tests {
 | orders | service | ../orders |\n| gone | service | ../missing |\n\
 | undocumented | service | ../undocumented |\n"
                     .to_owned(),
+            pages: Vec::new(),
             claude: RefCell::new(BTreeMap::from([(
                 PathBuf::from("/w/orders"),
                 "# Orders\n".to_owned(),
@@ -343,5 +488,49 @@ mod tests {
         let claude = app.workspace.claude.borrow();
         assert!(claude[Path::new("/w")].contains("`/w/hub/docs/services/<repository>/`"));
         assert_eq!(claude[Path::new("/w/orders")], "# Orders\n");
+        assert_eq!(apply_unlisted(&app), vec!["stray".to_owned()]);
+    }
+
+    fn apply_unlisted(app: &HubApplication<Fixture>) -> Vec<String> {
+        app.sync_workspace(Path::new("hub"), HubMode::Check)
+            .unwrap()
+            .unlisted
+    }
+
+    #[test]
+    fn check_fresh_reports_current_stale_unlisted_and_malformed_sources() {
+        let marker = |repository: &str, path: &str| {
+            format!(
+                "<!-- harness-source: {repository}@{}:{path}#L2-L2 sha256={} -->",
+                "a".repeat(40),
+                crate::domain::sha256_hex(b"b\n")
+            )
+        };
+        let mut fixture = fixture();
+        fixture.pages = vec![(
+            "docs/services/orders/README.md".into(),
+            format!(
+                "claim\n{}\n{}\n{}\n<!-- harness-source: broken -->\n",
+                marker("orders", "src/Same.java"),
+                marker("orders", "src/Changed.java"),
+                marker("ghost", "src/Same.java"),
+            ),
+        )];
+        let report = HubApplication::new(fixture)
+            .check_fresh(Path::new("hub"))
+            .unwrap();
+        let outcomes = report
+            .sources
+            .iter()
+            .map(|check| match &check.outcome {
+                Ok(Freshness::Current) => "current",
+                Ok(Freshness::Moved(_)) => "moved",
+                Ok(Freshness::Stale(_)) => "stale",
+                Err(_) => "error",
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(outcomes, ["current", "stale", "error", "error"]);
+        assert_eq!(report.sources[0].line, 2);
+        assert!(!report.ok());
     }
 }
