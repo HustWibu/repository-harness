@@ -79,6 +79,10 @@ Use `--local-only` to try Harness on a shared repository without committing
 it: every installed path goes to `.git/info/exclude`, tracked files are left
 unchanged, and `--remove-local-only` deletes only those lines (decision 0034).
 
+For many repositories, make one of them a shared knowledge hub: list the
+members in its `docs/README.md` and run `scripts/bin/harness hub sync` there to
+point each member's `CLAUDE.md` at the hub (decision 0036).
+
 The bootstrap downloads a versioned `harness` binary and checksum, verifies
 release identity, and delegates installation to that candidate.
 

@@ -46,6 +46,16 @@ library, or another named role. Location is a URL or a path relative to this
 repository, such as `../orders-service`; never an absolute path from one
 machine.
 
+### Shared Knowledge Hub
+
+Optional (decision 0036). To keep one home for a multi-repository system's
+knowledge, make one repository the hub: install Harness there, keep system
+decisions, contracts, and plans in its `docs/`, and knowledge for one member
+in `docs/services/<repository>/`. Every row above whose Location is a relative
+path is a member. Run `scripts/bin/harness hub sync` in the hub to write a
+pointer block into each member's `CLAUDE.md`; `--check` reports stale or
+missing members without writing.
+
 ### Authority By Truth Type
 
 Each truth type has exactly one source of record. Every other copy only points

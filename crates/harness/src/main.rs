@@ -1,10 +1,12 @@
 use std::io::{self, Write};
 
 use clap::Parser;
-use harness::application::{CoreApplication, InspectionApplication, SelfUpdateApplication};
+use harness::application::{
+    CoreApplication, HubApplication, InspectionApplication, SelfUpdateApplication,
+};
 use harness::infrastructure::{
-    ClaudeSessionLog, EmbeddedCoreDistribution, FileSystemInstallationState, GitThreeWayMerge,
-    LatestReleaseCandidates,
+    ClaudeSessionLog, EmbeddedCoreDistribution, FileSystemHubWorkspace,
+    FileSystemInstallationState, GitThreeWayMerge, LatestReleaseCandidates,
 };
 use harness::interface::{execute, Cli};
 
@@ -20,7 +22,8 @@ fn main() {
         FileSystemInstallationState,
     );
     let inspection = InspectionApplication::new(ClaudeSessionLog);
-    let exit = execute(cli, &application, &self_update, &inspection);
+    let hub = HubApplication::new(FileSystemHubWorkspace);
+    let exit = execute(cli, &application, &self_update, &inspection, &hub);
     if !exit.stdout.is_empty() {
         let _ = io::stdout().write_all(exit.stdout.as_bytes());
     }

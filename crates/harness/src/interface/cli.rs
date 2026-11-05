@@ -3,10 +3,11 @@ use std::path::PathBuf;
 use clap::{Parser, Subcommand};
 
 use crate::application::{
-    CoreApplication, CoreDistributionPort, InspectionApplication, InspectionError,
-    InstallationStatePort, SelfUpdateApplication, SelfUpdateExit, SessionLogPort,
-    ThreeWayMergePort, UpdateCandidatePort,
+    CoreApplication, CoreDistributionPort, HubApplication, HubMode, HubWorkspacePort,
+    InspectionApplication, InspectionError, InstallationStatePort, SelfUpdateApplication,
+    SelfUpdateExit, SessionLogPort, ThreeWayMergePort, UpdateCandidatePort,
 };
+use crate::interface::hub_presenter::present_hub_sync;
 use crate::interface::inspection_presenter::{present_skill_report, EXIT_FAILED, EXIT_USAGE};
 use crate::interface::presenter::{
     present_abort, present_doctor, present_executable_recovery, present_install, present_status,
@@ -78,13 +79,42 @@ pub enum Command {
         #[arg(required = true)]
         sessions: Vec<PathBuf>,
     },
+    /// Shared knowledge hub commands (decision 0036).
+    Hub {
+        #[command(subcommand)]
+        action: HubCommand,
+    },
 }
 
-pub fn execute<D, S, M, C, U, L>(
+#[derive(Debug, Subcommand)]
+pub enum HubCommand {
+    /// Write the pointer block into the CLAUDE.md of every member repository
+    /// listed under Related Repositories in the hub's docs/README.md.
+    ///
+    /// Only the marked block is written; text outside it is kept. Nothing is
+    /// committed. Members must be Git repository roots checked out at the
+    /// listed relative paths.
+    Sync {
+        /// The hub repository.
+        #[arg(long, default_value = ".")]
+        directory: PathBuf,
+        /// Show what would change without writing.
+        #[arg(long, conflicts_with = "check")]
+        dry_run: bool,
+        /// Write nothing; exit 1 if any member is stale or unreachable.
+        #[arg(long)]
+        check: bool,
+        #[arg(long)]
+        json: bool,
+    },
+}
+
+pub fn execute<D, S, M, C, U, L, W>(
     cli: Cli,
     application: &CoreApplication<D, S, M>,
     self_update: &SelfUpdateApplication<C, U>,
     inspection: &InspectionApplication<L>,
+    hub: &HubApplication<W>,
 ) -> CommandExit
 where
     D: CoreDistributionPort,
@@ -93,6 +123,7 @@ where
     C: UpdateCandidatePort,
     U: InstallationStatePort,
     L: SessionLogPort,
+    W: HubWorkspacePort,
 {
     let result: Result<CommandExit, String> = match cli.command {
         Command::Install {
@@ -164,6 +195,26 @@ where
                 .skill_report(&sessions)
                 .map(|report| present_skill_report(&report, json))
                 .unwrap_or_else(present_inspection_error);
+        }
+        Command::Hub {
+            action:
+                HubCommand::Sync {
+                    directory,
+                    dry_run,
+                    check,
+                    json,
+                },
+        } => {
+            let mode = if check {
+                HubMode::Check
+            } else if dry_run {
+                HubMode::DryRun
+            } else {
+                HubMode::Apply
+            };
+            hub.sync(&directory, mode)
+                .map(|report| present_hub_sync(&report, json))
+                .map_err(|error| error.to_string())
         }
     };
     result.unwrap_or_else(present_error)

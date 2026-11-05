@@ -44,6 +44,8 @@ Add optional, technology-neutral surfaces. Empty means behavior as before.
 
 Harness itself never reads, writes, or calls another repository during install,
 update, or any command. Only an explicitly invoked skill may read one.
+Amended by decision 0036: `harness hub sync`, run in a knowledge hub, writes
+only its marked pointer block into listed member repositories.
 
 ## Alternatives Considered
 
