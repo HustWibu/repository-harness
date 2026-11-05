@@ -26,6 +26,7 @@ is an available reference, not a required task step.
 | 0034 | Local-Only Installation |
 | 0035 | Multi-Repository Knowledge Surfaces |
 | 0036 | Shared Knowledge Hub (proposed) |
+| 0037 | Onboarding From A Hub (proposed) |
 
 These decisions describe upstream Harness. Installed consumers begin with an
 empty decision index and add only real consumer choices.

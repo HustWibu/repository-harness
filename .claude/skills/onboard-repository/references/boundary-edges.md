@@ -45,6 +45,17 @@ If either condition fails, leave the edge **unconfirmed** and name the
 repository and declaration a reader would need. Never clone or fetch a
 repository to confirm an edge.
 
+## Onboarding From A Hub
+
+When the tested repository is a shared knowledge hub (decision 0036), run this
+skill in the hub and name the member to onboard. The hub's Related Repositories
+table locates every member, and the user's request to onboard a member allows
+reading it and the members its edges reach. Cite member code with a source
+`repository` and that member's revision, as `evidence-capsule-v2.md` defines;
+both ends of an edge can then be confirmed. Start from the member's rows in
+`docs/system-map.md` when the hub has one, and propose destinations in the hub:
+`docs/services/<member>/`, `docs/contracts/`, and `docs/decisions/`.
+
 ## Proposals
 
 When edges reveal related repositories or truth owned elsewhere, the backfill

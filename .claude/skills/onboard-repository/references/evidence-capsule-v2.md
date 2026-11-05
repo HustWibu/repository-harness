@@ -108,7 +108,12 @@ Minimal input shape:
 ```
 
 Supply all four required boundary kinds, not only the illustrative row. Source
-`revision` is optional and defaults to the tested revision. Generate
+`revision` is optional and defaults to the tested revision. A source in another
+repository adds `"repository": "<name>"`, a row of the Related Repositories
+table in the tested repository's `docs/README.md` at the tested revision whose
+Location is a relative path to a Git repository root; such a source must give
+its own `revision`, a commit of that repository. The capsule keeps the
+`repository` field on that source. Generate
 `after_text` from the complete pinned destination in memory; do not type a
 partial replacement as though it were a complete file.
 
@@ -212,7 +217,8 @@ the displayed patch and list relevant gaps in `unknowns` or `limitations`.
 ## Hash definitions
 
 - Source digest: exact LF-terminated bytes printed by
-  `git show <revision>:<path> | sed -n '<start>,<end>p'`.
+  `git show <revision>:<path> | sed -n '<start>,<end>p'`, run in the named
+  related repository when the source has `repository`.
 - Producer-skill digest: complete bytes returned by
   `git show <revision>:<producer-skill-path>`.
 - Destination-before digest: complete bytes returned by
@@ -239,7 +245,8 @@ observation was missed, incomplete, or could not establish equivalence.
 - Every causal claim includes its complete command-to-effect source chain.
 - Hunk IDs exactly match their patch-marker IDs.
 - Every repository path is relative and contains no `..` component.
-- The capsule has no fields beyond those shown above.
+- The capsule has no fields beyond those shown above, except a source's
+  optional `repository`.
 
 The repository-aware validator proves transcript identity, schema and links,
 source-range hashes, producer-skill hash, patch hashes, exact patch

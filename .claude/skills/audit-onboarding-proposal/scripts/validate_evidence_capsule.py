@@ -153,6 +153,32 @@ def git_blob(repository: Path, revision: str, path: str, context: str) -> bytes:
     return result.stdout
 
 
+RELATED_ROW_RE = re.compile(r"^\|\s*`?([A-Za-z0-9._-]+)`?\s*\|[^|]*\|\s*`?([^|`]+?)`?\s*\|$")
+
+
+def related_repository(root: Path, map_blob: bytes, name: str, context: str) -> Path:
+    """Resolve a source repository named in the pinned Related Repositories table."""
+    text = map_blob.decode("utf-8", errors="replace")
+    _, found, rest = text.partition("## Related Repositories\n")
+    require(found != "", f"{context}: pinned docs/README.md has no Related Repositories section")
+    for line in rest.split("\n#", 1)[0].splitlines():
+        match = RELATED_ROW_RE.match(line.strip())
+        if not match or match.group(1) != name:
+            continue
+        location = match.group(2).strip()
+        require("://" not in location and not location.startswith(("/", "~")),
+                f"{context}: {name} must have a relative Location")
+        candidate = (root / location).resolve()
+        result = subprocess.run(
+            ["git", "-C", str(candidate), "rev-parse", "--show-toplevel"],
+            check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        )
+        require(result.returncode == 0 and Path(result.stdout.strip()).resolve() == candidate,
+                f"{context}: {name} is not a Git repository root at {location}")
+        return candidate
+    raise CapsuleError(f"{context}: {name} is not listed under Related Repositories")
+
+
 def source_range(blob: bytes, start_line: int, end_line: int, context: str) -> bytes:
     lines = blob.splitlines(keepends=True)
     require(end_line <= len(lines), f"{context}: source range exceeds file length")
@@ -361,9 +387,11 @@ def validate_capsule(
         for source_index, source in enumerate(sources):
             source_context = f"{context}.sources[{source_index}]"
             require(isinstance(source, dict), f"{source_context}: expected object")
+            related = source.get("repository") if schema == SCHEMA_V2 else None
             require_exact_keys(
                 source,
-                {"revision", "path", "start_line", "end_line", "content_sha256", "role"},
+                {"revision", "path", "start_line", "end_line", "content_sha256", "role"}
+                | ({"repository"} if related is not None else set()),
                 source_context,
             )
             require(isinstance(source["revision"], str) and REVISION_RE.fullmatch(source["revision"]) is not None,
@@ -376,8 +404,18 @@ def validate_capsule(
             require_sha(source["content_sha256"], f"{source_context}.content_sha256")
             require(source["role"] in SOURCE_ROLES, f"{source_context}.role: unsupported value")
             if schema == SCHEMA_V2:
+                source_repository = repository
+                if related is not None:
+                    require(isinstance(related, str) and re.fullmatch(r"[A-Za-z0-9._-]+", related) is not None,
+                            f"{source_context}.repository: invalid name")
+                    source_repository = related_repository(
+                        repository,
+                        git_blob(repository, tested["revision"], "docs/README.md", source_context),
+                        related,
+                        source_context,
+                    )
                 blob = git_blob(
-                    repository,
+                    source_repository,
                     source["revision"],
                     source["path"],
                     source_context,
