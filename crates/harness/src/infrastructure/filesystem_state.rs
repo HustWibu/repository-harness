@@ -7,6 +7,7 @@ use fs2::FileExt;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
+use super::local_only;
 use crate::application::{InstallationStatePort, PortError};
 use crate::domain::{
     ApplyReceipt, BaselineFile, ContentHash, FrozenWorkspaceFile, InstallationState, RelativePath,
@@ -110,7 +111,9 @@ impl InstallationStatePort for FileSystemInstallationState {
             },
         };
         FileExt::unlock(&lock).map_err(io_error)?;
-        result
+        let receipt = result?;
+        local_only::sync(root, state)?;
+        Ok(receipt)
     }
 
     fn apply_if_unchanged(
@@ -144,7 +147,13 @@ impl InstallationStatePort for FileSystemInstallationState {
             },
         };
         FileExt::unlock(&lock).map_err(io_error)?;
-        result
+        let receipt = result?;
+        local_only::sync(root, state)?;
+        Ok(receipt)
+    }
+
+    fn local_only_exclusions(&self, root: &Path) -> Result<Option<Vec<String>>, PortError> {
+        local_only::read_block(root)
     }
 
     fn resolution_pending(&self, root: &Path) -> Result<bool, PortError> {

@@ -479,6 +479,26 @@ where
                     passed: installed.validate().is_ok(),
                     detail: format!("installed core {}", installed.core_version),
                 });
+                if let Some(excluded) = self.state.local_only_exclusions(root)? {
+                    let missing = installed
+                        .files
+                        .iter()
+                        .map(|file| format!("/{}", file.path))
+                        .filter(|line| !excluded.contains(line))
+                        .collect::<Vec<_>>();
+                    checks.push(DoctorCheck {
+                        name: "local_only".to_owned(),
+                        passed: missing.is_empty(),
+                        detail: if missing.is_empty() {
+                            "every installed path is listed in the Git exclude file".to_owned()
+                        } else {
+                            format!(
+                                "not excluded, so it shows in git status: {}; rerun the installer with --local-only",
+                                missing.join(", ")
+                            )
+                        },
+                    });
+                }
                 for baseline in installed.files {
                     let safety = self.state.validate_managed_path(root, &baseline.path);
                     checks.push(DoctorCheck {
@@ -720,6 +740,10 @@ mod tests {
         ) -> Result<Option<UpdateResolutionSession>, PortError> {
             Ok(self.resolution.borrow().clone())
         }
+        fn local_only_exclusions(&self, _root: &Path) -> Result<Option<Vec<String>>, PortError> {
+            Ok(None)
+        }
+
         fn clear_resolution(&self, _root: &Path) -> Result<bool, PortError> {
             Ok(self.resolution.borrow_mut().take().is_some())
         }

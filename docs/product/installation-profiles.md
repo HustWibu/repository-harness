@@ -47,6 +47,17 @@ Advice cannot establish consumer policy or authorize an architecture rewrite.
   (`CLAUDE.md` and `docs/`).
 - `--force`: overwrite individual managed files with backups.
 - `--dry-run`: preview without writing.
+- `--local-only`: keep the install out of `git status` (decision 0034). The
+  target must be a Git repository root. Installed paths, `.harness-core/`,
+  `.harness-backup/`, and `scripts/bin/harness` are listed in a marked block
+  in `.git/info/exclude`; `.gitignore` is not touched. Implies `--merge` and
+  rejects `--override` and `--force`. Tracked payload paths are reported and
+  skipped; `--refresh-claude-shim` still edits a tracked `CLAUDE.md` and warns
+  that the change shows in `git status`. A later install or `harness update`
+  rewrites the block to match the installed paths, and `harness doctor`
+  reports a `local_only` check.
+- `--remove-local-only`: delete only the marked block from
+  `.git/info/exclude` and exit; installed files remain.
 
 ## Update
 

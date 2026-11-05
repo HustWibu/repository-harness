@@ -54,6 +54,9 @@ pub trait InstallationStatePort {
     ) -> Result<(), PortError>;
     fn load_resolution(&self, root: &Path) -> Result<Option<UpdateResolutionSession>, PortError>;
     fn clear_resolution(&self, root: &Path) -> Result<bool, PortError>;
+    /// Lines of the local-only block in the Git exclude file, or `None` when
+    /// the install is not local-only.
+    fn local_only_exclusions(&self, root: &Path) -> Result<Option<Vec<String>>, PortError>;
 }
 
 #[derive(Debug)]
