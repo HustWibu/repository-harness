@@ -104,6 +104,11 @@ pub enum HubCommand {
         /// Write nothing; exit 1 if any member is stale or unreachable.
         #[arg(long)]
         check: bool,
+        /// Write one block into the CLAUDE.md of the directory holding the
+        /// hub instead of each member; members are only checked. For
+        /// repositories cloned side by side whose CLAUDE.md is not committed.
+        #[arg(long)]
+        workspace: bool,
         #[arg(long)]
         json: bool,
     },
@@ -202,6 +207,7 @@ where
                     directory,
                     dry_run,
                     check,
+                    workspace,
                     json,
                 },
         } => {
@@ -212,7 +218,12 @@ where
             } else {
                 HubMode::Apply
             };
-            hub.sync(&directory, mode)
+            let report = if workspace {
+                hub.sync_workspace(&directory, mode)
+            } else {
+                hub.sync(&directory, mode)
+            };
+            report
                 .map(|report| present_hub_sync(&report, json))
                 .map_err(|error| error.to_string())
         }

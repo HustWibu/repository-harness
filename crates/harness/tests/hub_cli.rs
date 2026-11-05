@@ -36,7 +36,9 @@ fn hub_sync_writes_only_the_pointer_block_and_check_detects_drift() {
     git_repo(&hub);
     git_repo(&orders);
     git_repo(&billing);
-    fs::create_dir_all(hub.join("docs")).unwrap();
+    for member in ["orders-service", "billing-service", "plain"] {
+        fs::create_dir_all(hub.join("docs/services").join(member)).unwrap();
+    }
     fs::write(hub.join("docs/README.md"), MAP).unwrap();
     fs::write(orders.join("CLAUDE.md"), "# Orders team rules\nkeep this\n").unwrap();
 
@@ -86,6 +88,13 @@ fn hub_sync_writes_only_the_pointer_block_and_check_detects_drift() {
     assert!(String::from_utf8_lossy(&broken.stdout)
         .contains("failed plain (../plain): ../plain is not the root of a Git repository"));
     assert!(!workspace.path().join("plain/CLAUDE.md").exists());
+
+    // A member without docs/services/<name>/ in the hub is not pointed at it.
+    fs::remove_dir(hub.join("docs/services/billing-service")).unwrap();
+    let undocumented = harness(&["--check"], &hub);
+    assert_eq!(undocumented.status.code(), Some(1));
+    assert!(String::from_utf8_lossy(&undocumented.stdout)
+        .contains("failed billing-service (../billing-service): the hub has no docs/services/billing-service/"));
 }
 
 #[test]
@@ -96,4 +105,33 @@ fn hub_sync_without_a_map_section_is_an_error() {
     let output = harness(&[], hub.path());
     assert_eq!(output.status.code(), Some(1));
     assert!(String::from_utf8_lossy(&output.stderr).contains("Related Repositories"));
+}
+
+#[test]
+fn hub_sync_workspace_writes_only_the_parent_claude_and_keeps_its_text() {
+    let workspace = tempfile::tempdir().unwrap();
+    let root = workspace.path().canonicalize().unwrap();
+    let hub = root.join("system-knowledge");
+    git_repo(&hub);
+    git_repo(&root.join("orders-service"));
+    git_repo(&root.join("billing-service"));
+    for member in ["orders-service", "billing-service"] {
+        fs::create_dir_all(hub.join("docs/services").join(member)).unwrap();
+    }
+    fs::write(hub.join("docs/README.md"), MAP).unwrap();
+    fs::write(root.join("CLAUDE.md"), "# Workspace notes\nkeep this\n").unwrap();
+
+    let check = harness(&["--workspace", "--check"], &hub);
+    assert_eq!(check.status.code(), Some(1));
+    let stdout = String::from_utf8_lossy(&check.stdout);
+    assert!(stdout.contains("stale"), "{stdout}");
+    assert!(stdout.contains("covered orders-service"), "{stdout}");
+
+    assert!(harness(&["--workspace"], &hub).status.success());
+    let claude = fs::read_to_string(root.join("CLAUDE.md")).unwrap();
+    assert!(claude.starts_with("# Workspace notes\nkeep this\n\n<!-- HARNESS-HUB:BEGIN -->"));
+    assert!(claude.contains(&format!("`{}/docs/services/<repository>/`", hub.display())));
+    assert!(!root.join("orders-service/CLAUDE.md").exists());
+    assert!(!root.join("billing-service/CLAUDE.md").exists());
+    assert!(harness(&["--workspace", "--check"], &hub).status.success());
 }

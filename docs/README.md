@@ -54,7 +54,10 @@ decisions, contracts, and plans in its `docs/`, and knowledge for one member
 in `docs/services/<repository>/`. Every row above whose Location is a relative
 path is a member. Run `scripts/bin/harness hub sync` in the hub to write a
 pointer block into each member's `CLAUDE.md`; `--check` reports stale or
-missing members without writing.
+missing members without writing. When members are cloned side by side and do
+not commit `CLAUDE.md`, use `hub sync --workspace` instead: it writes one block
+into the `CLAUDE.md` of the directory holding the hub, which Claude Code loads
+in every member below it.
 
 ### Authority By Truth Type
 

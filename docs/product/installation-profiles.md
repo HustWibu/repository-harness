@@ -67,7 +67,11 @@ table lists member repositories by relative path (decision 0036).
 `CLAUDE.md`; members receive no core files. It refuses members that are not
 Git repository roots or whose `CLAUDE.md` is a symlink, keeps text outside the
 markers, and never commits. `--dry-run` previews and `--check` exits 1 when a
-member is stale or unreachable.
+member is stale or unreachable, or when the hub lacks its
+`docs/services/<repository>/`. `--workspace` writes one block into the
+`CLAUDE.md` of the directory holding the hub instead, naming the hub by
+absolute path, and only checks members; it refuses when that directory is
+inside a Git repository.
 
 ## Update
 
