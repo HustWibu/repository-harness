@@ -56,6 +56,13 @@ impl CoreDistributionPort for EmbeddedCoreDistribution {
         )?;
         add(
             &mut files,
+            ".claude/skills/onboard-repository/references/boundary-edges.md",
+            include_bytes!(
+                "../../../../.claude/skills/onboard-repository/references/boundary-edges.md"
+            ),
+        )?;
+        add(
+            &mut files,
             ".claude/skills/onboard-repository/scripts/emit_evidence_bundle.py",
             include_bytes!(
                 "../../../../.claude/skills/onboard-repository/scripts/emit_evidence_bundle.py"
