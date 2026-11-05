@@ -83,6 +83,8 @@ For many repositories, make one of them a shared knowledge hub: list the
 members in its `docs/README.md` and run `scripts/bin/harness hub sync` there to
 point each member's `CLAUDE.md` at the hub, or `hub sync --workspace` to write
 one pointer into the `CLAUDE.md` of the directory holding them (decision 0036).
+`hub check-fresh` reports hub facts whose cited member code has changed
+(decision 0039).
 
 The bootstrap downloads a versioned `harness` binary and checksum, verifies
 release identity, and delegates installation to that candidate.

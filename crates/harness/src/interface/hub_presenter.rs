@@ -1,6 +1,7 @@
 use serde::Serialize;
 
-use crate::application::{HubMode, HubReport, MemberOutcome};
+use crate::application::{FreshnessReport, HubMode, HubReport, MemberOutcome};
+use crate::domain::Freshness;
 use crate::interface::presenter::CommandExit;
 
 #[derive(Serialize)]
@@ -11,6 +12,8 @@ struct HubOutput<'a> {
     members: Vec<MemberOutput<'a>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     workspace: Option<WorkspaceOutput<'a>>,
+    #[serde(skip_serializing_if = "<[String]>::is_empty")]
+    unlisted: &'a [String],
 }
 
 #[derive(Serialize)]
@@ -74,6 +77,7 @@ pub fn present_hub_sync(report: &HubReport, json: bool) -> CommandExit {
                     detail,
                 }
             }),
+            unlisted: &report.unlisted,
         };
         return CommandExit {
             code,
@@ -108,8 +112,100 @@ pub fn present_hub_sync(report: &HubReport, json: bool) -> CommandExit {
         }
         out.push('\n');
     }
+    if !report.unlisted.is_empty() {
+        out.push_str("Git repositories in the workspace not listed under Related Repositories:\n");
+        for name in &report.unlisted {
+            out.push_str(&format!("  unlisted {name}\n"));
+        }
+    }
     if !ok && report.mode == HubMode::Check {
-        out.push_str("Run `harness hub sync` in the hub to refresh stale members.\n");
+        out.push_str(
+            "Fix failed members, then run `harness hub sync` in the hub to refresh stale ones.\n",
+        );
+    }
+    CommandExit {
+        code,
+        stdout: out,
+        stderr: String::new(),
+    }
+}
+
+#[derive(Serialize)]
+struct FreshnessOutput<'a> {
+    operation: &'static str,
+    ok: bool,
+    pages: usize,
+    sources: Vec<SourceOutput<'a>>,
+}
+
+#[derive(Serialize)]
+struct SourceOutput<'a> {
+    page: &'a str,
+    line: usize,
+    source: &'a str,
+    outcome: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    detail: Option<String>,
+}
+
+fn freshness(outcome: &Result<Freshness, String>) -> (&'static str, Option<String>) {
+    match outcome {
+        Ok(Freshness::Current) => ("current", None),
+        Ok(Freshness::Moved(line)) => ("moved", Some(format!("now starts at line {line}"))),
+        Ok(Freshness::Stale(reason)) => ("stale", Some(reason.clone())),
+        Err(reason) => ("error", Some(reason.clone())),
+    }
+}
+
+pub fn present_hub_freshness(report: &FreshnessReport, json: bool) -> CommandExit {
+    let ok = report.ok();
+    let code = if ok { 0 } else { 1 };
+    if json {
+        let output = FreshnessOutput {
+            operation: "hub-check-fresh",
+            ok,
+            pages: report.pages,
+            sources: report
+                .sources
+                .iter()
+                .map(|check| {
+                    let (outcome, detail) = freshness(&check.outcome);
+                    SourceOutput {
+                        page: &check.page,
+                        line: check.line,
+                        source: &check.source,
+                        outcome,
+                        detail,
+                    }
+                })
+                .collect(),
+        };
+        return CommandExit {
+            code,
+            stdout: format!("{}\n", serde_json::to_string_pretty(&output).unwrap()),
+            stderr: String::new(),
+        };
+    }
+    let mut out = format!(
+        "Hub knowledge sources: {} in {} pages\n",
+        report.sources.len(),
+        report.pages
+    );
+    for check in &report.sources {
+        let (label, detail) = freshness(&check.outcome);
+        out.push_str(&format!(
+            "  {label} {}:{} {}",
+            check.page, check.line, check.source
+        ));
+        if let Some(detail) = detail {
+            out.push_str(&format!(": {detail}"));
+        }
+        out.push('\n');
+    }
+    if !ok {
+        out.push_str(
+            "Re-check the stale claims against the member code and update their markers.\n",
+        );
     }
     CommandExit {
         code,

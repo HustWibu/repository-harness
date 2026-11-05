@@ -135,3 +135,86 @@ fn hub_sync_workspace_writes_only_the_parent_claude_and_keeps_its_text() {
     assert!(!root.join("billing-service/CLAUDE.md").exists());
     assert!(harness(&["--workspace", "--check"], &hub).status.success());
 }
+
+fn commit(repo: &Path, file: &str, content: &str) -> String {
+    fs::create_dir_all(repo.join(file).parent().unwrap()).unwrap();
+    fs::write(repo.join(file), content).unwrap();
+    let git = |args: &[&str]| {
+        let output = Command::new("git")
+            .args(["-c", "user.name=t", "-c", "user.email=t@t"])
+            .args(args)
+            .current_dir(repo)
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{output:?}");
+        String::from_utf8(output.stdout).unwrap().trim().to_owned()
+    };
+    git(&["add", "-A"]);
+    git(&["commit", "-qm", "c"]);
+    git(&["rev-parse", "HEAD"])
+}
+
+fn fresh(hub: &Path) -> Output {
+    Command::new(env!("CARGO_BIN_EXE_harness"))
+        .args(["hub", "check-fresh", "--directory"])
+        .arg(hub)
+        .output()
+        .unwrap()
+}
+
+#[test]
+fn hub_check_fresh_follows_cited_lines_across_member_commits() {
+    let workspace = tempfile::tempdir().unwrap();
+    let root = workspace.path();
+    let hub = root.join("system-knowledge");
+    let orders = root.join("orders-service");
+    git_repo(&hub);
+    git_repo(&orders);
+    git_repo(&root.join("billing-service"));
+    git_repo(&root.join("stray-tool"));
+    git_repo(&root.join(".worktree-copy"));
+    fs::create_dir_all(hub.join("docs/services/orders-service")).unwrap();
+    fs::create_dir_all(hub.join("docs/services/billing-service")).unwrap();
+    fs::write(hub.join("docs/README.md"), MAP).unwrap();
+
+    let revision = commit(&orders, "src/App.java", "class App {\n  send();\n}\n");
+    let digest = {
+        use sha2::{Digest, Sha256};
+        format!("{:x}", Sha256::digest(b"  send();\n"))
+    };
+    fs::write(
+        hub.join("docs/services/orders-service/README.md"),
+        format!(
+            "# orders\n\nOrders sends on start.\n<!-- harness-source: orders-service@{revision}:src/App.java#L2-L2 sha256={digest} -->\n"
+        ),
+    )
+    .unwrap();
+
+    let current = fresh(&hub);
+    assert!(current.status.success(), "{current:?}");
+    assert!(String::from_utf8_lossy(&current.stdout)
+        .contains("current docs/services/orders-service/README.md:4"));
+
+    commit(
+        &orders,
+        "src/App.java",
+        "// header\nclass App {\n  send();\n}\n",
+    );
+    let moved = fresh(&hub);
+    assert!(moved.status.success());
+    assert!(String::from_utf8_lossy(&moved.stdout).contains("now starts at line 3"));
+
+    commit(
+        &orders,
+        "src/App.java",
+        "// header\nclass App {\n  sendAsync();\n}\n",
+    );
+    let stale = fresh(&hub);
+    assert_eq!(stale.status.code(), Some(1));
+    assert!(String::from_utf8_lossy(&stale.stdout).contains("stale"));
+
+    let sync = harness(&["--workspace", "--check"], &hub);
+    assert!(String::from_utf8_lossy(&sync.stdout).contains("unlisted stray-tool"));
+    assert!(!String::from_utf8_lossy(&sync.stdout).contains("unlisted system-knowledge"));
+    assert!(!String::from_utf8_lossy(&sync.stdout).contains("unlisted .worktree-copy"));
+}

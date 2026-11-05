@@ -7,7 +7,7 @@ use crate::application::{
     InspectionApplication, InspectionError, InstallationStatePort, SelfUpdateApplication,
     SelfUpdateExit, SessionLogPort, ThreeWayMergePort, UpdateCandidatePort,
 };
-use crate::interface::hub_presenter::present_hub_sync;
+use crate::interface::hub_presenter::{present_hub_freshness, present_hub_sync};
 use crate::interface::inspection_presenter::{present_skill_report, EXIT_FAILED, EXIT_USAGE};
 use crate::interface::presenter::{
     present_abort, present_doctor, present_executable_recovery, present_install, present_status,
@@ -109,6 +109,15 @@ pub enum HubCommand {
         /// repositories cloned side by side whose CLAUDE.md is not committed.
         #[arg(long)]
         workspace: bool,
+        #[arg(long)]
+        json: bool,
+    },
+    /// Check every `harness-source` marker in the hub's docs/ against the
+    /// member's HEAD; exit 1 when cited lines changed or cannot be read.
+    CheckFresh {
+        /// The hub repository.
+        #[arg(long, default_value = ".")]
+        directory: PathBuf,
         #[arg(long)]
         json: bool,
     },
@@ -227,6 +236,12 @@ where
                 .map(|report| present_hub_sync(&report, json))
                 .map_err(|error| error.to_string())
         }
+        Command::Hub {
+            action: HubCommand::CheckFresh { directory, json },
+        } => hub
+            .check_fresh(&directory)
+            .map(|report| present_hub_freshness(&report, json))
+            .map_err(|error| error.to_string()),
     };
     result.unwrap_or_else(present_error)
 }

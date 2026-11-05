@@ -17,6 +17,9 @@ authority for missing product policy.
 Configuration checked into a repository may describe only a development
 environment. Before concluding how an environment behaves, find its
 configuration source under Authority By Truth Type in `docs/README.md`.
+When existing code and a written rule disagree, consistency (names, layering,
+base libraries) follows the existing code; correctness and safety follow the
+rule, and fixing old code is a separate change.
 
 ## Missing Capabilities
 
@@ -43,6 +46,8 @@ assumptions, and structural checks from semantic or runtime proof.
 A plan, checklist, or completion message is not behavior-level proof. A checked-in
 CI job does not prove it ran or blocks merging. Report what was exercised, what
 failed or could not run, and what remains unverified.
+For facts or contracts that span repositories, follow
+`docs/patterns/multi-repository-evidence.md`.
 
 ## Definition Of Done
 

@@ -15,6 +15,7 @@ positive_paths=(
   .claude/skills/improve-harness/SKILL.md
   docs/WORKFLOW.md
   docs/patterns/encoding-invariants.md
+  docs/patterns/multi-repository-evidence.md
   docs/templates/application-runbook.md
   docs/templates/harness-improvement.md
   docs/templates/session-handoff.md

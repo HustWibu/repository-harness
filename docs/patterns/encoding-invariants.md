@@ -129,6 +129,18 @@ Record a retirement condition with every gate, for example "remove when the
 guarded module is deleted" or "revisit if it has not failed in twelve months".
 A gate without one tends to outlive its reason.
 
+When the gate is a Claude Code hook:
+
+- A gate that waits for a person runs on prompt submission. A hook on stop
+  only records and notifies; blocking there loops the agent.
+- Give each gate a named switch to disable it, and log every block and every
+  use of the switch.
+- Keep a passing and a blocking fixture for each gate, plus one for the switch.
+- Let an agent score and a script decide: the agent writes the verdict with
+  citations, and the gate reads the verdict without re-judging it.
+- Record a waiver in the guarded record itself, with who waived it and their
+  reason verbatim; an environment variable leaves no history.
+
 ## 8. Cross-Repository Invariants
 
 Some rules span repositories: a contract copied into several services, or a
