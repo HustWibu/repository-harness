@@ -14,7 +14,8 @@ Start with the smallest authoritative surface.
 - `plans/`: optional locations for plans requested by the user or consumer workflow.
 - [`patterns/multi-repository-evidence.md`](patterns/multi-repository-evidence.md):
   source markers checked by `hub check-fresh`, contract statuses, counts that
-  reconcile, scope honesty, and open questions across repositories.
+  reconcile, scope honesty, and open questions across repositories. The
+  explicit `/survey-system` skill applies it to a whole system from the hub.
 - [`patterns/encoding-invariants.md`](patterns/encoding-invariants.md): turn
   accepted architecture, reliability, security, and quality rules into native
   mechanical validation.

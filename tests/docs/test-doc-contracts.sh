@@ -53,6 +53,7 @@ current_files=(
   docs/decisions/0037-onboarding-from-a-hub.md
   docs/decisions/0038-release-from-this-fork.md
   docs/decisions/0039-hub-knowledge-freshness-and-cross-repository-evidence.md
+  docs/decisions/0040-survey-system-skill.md
   docs/research/multi-repo-requirements.md
   docs/research/application-legibility.md
   docs/research/harness-gap-analysis.md
@@ -119,6 +120,11 @@ require docs/README.md '### Shared Knowledge Hub'
 require docs/product/installation-profiles.md '## Shared Knowledge Hub'
 require docs/README.md 'hub sync --workspace'
 require docs/patterns/multi-repository-evidence.md '<!-- harness-source: '
+require .claude/skills/survey-system/SKILL.md 'Stop until the user confirms the scope.'
+require .claude/skills/survey-system/SKILL.md 'never compute or copy a digest by hand'
+require .claude/skills/survey-system/SKILL.md '`scripts/check_pages.py --members <a,b,c>'
+require .claude/skills/survey-system/references/page-shapes.md '## System Page: `docs/system/overview.md`'
+require README.md '/survey-system'
 require docs/patterns/multi-repository-evidence.md '`harness hub check-fresh`'
 require docs/patterns/multi-repository-evidence.md 'never write `MATCHED` from one side'
 require docs/patterns/multi-repository-evidence.md '<TODO: verify — one concrete'
