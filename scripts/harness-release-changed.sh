@@ -4,7 +4,7 @@ set -euo pipefail
 # Exit successfully only when a changed path can alter the core-maintenance
 # binary, its embedded payload, bootstrap contract, or release proof.
 pattern='^('
-pattern+='\.claude/skills/(onboard-repository|audit-onboarding-proposal|encode-invariant|improve-harness)/|'
+pattern+='\.claude/skills/(onboard-repository|audit-onboarding-proposal|encode-invariant|improve-harness|survey-system)/|'
 pattern+='crates/harness/|Cargo\.toml$|Cargo\.lock$|'
 pattern+='docs/(WORKFLOW|README)\.md$|docs/patterns/(encoding-invariants|multi-repository-evidence)\.md$|docs/product/README\.md$|'
 pattern+='docs/plans/active/README\.md$|docs/templates/(application-runbook|decision|exec-plan|harness-improvement|session-handoff|evaluator-rubric|interface-contract)\.md$|'

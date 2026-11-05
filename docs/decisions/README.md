@@ -29,6 +29,7 @@ is an available reference, not a required task step.
 | 0037 | Onboarding From A Hub (proposed) |
 | 0038 | Release From This Fork |
 | 0039 | Hub Knowledge Freshness And Cross-Repository Evidence (proposed) |
+| 0040 | Survey System Skill (proposed) |
 
 These decisions describe upstream Harness. Installed consumers begin with an
 empty decision index and add only real consumer choices.

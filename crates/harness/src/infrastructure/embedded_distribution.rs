@@ -82,6 +82,21 @@ impl CoreDistributionPort for EmbeddedCoreDistribution {
         )?;
         add(
             &mut files,
+            ".claude/skills/survey-system/SKILL.md",
+            include_bytes!("../../../../.claude/skills/survey-system/SKILL.md"),
+        )?;
+        add(
+            &mut files,
+            ".claude/skills/survey-system/references/page-shapes.md",
+            include_bytes!("../../../../.claude/skills/survey-system/references/page-shapes.md"),
+        )?;
+        add(
+            &mut files,
+            ".claude/skills/survey-system/scripts/pin_sources.py",
+            include_bytes!("../../../../.claude/skills/survey-system/scripts/pin_sources.py"),
+        )?;
+        add(
+            &mut files,
             "docs/WORKFLOW.md",
             include_bytes!("../../../../docs/WORKFLOW.md"),
         )?;
@@ -234,6 +249,7 @@ mod tests {
             ".claude/skills/audit-onboarding-proposal/SKILL.md",
             ".claude/skills/encode-invariant/SKILL.md",
             ".claude/skills/improve-harness/SKILL.md",
+            ".claude/skills/survey-system/SKILL.md",
         ] {
             let skill = distribution
                 .files

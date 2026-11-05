@@ -27,6 +27,7 @@ tests/installer/test-engineering-wisdom-opt-in.sh
 tests/docs/test-doc-contracts.sh
 tests/docs/test-context-budget.sh
 tests/workflow/test-repository-workflow.sh
+tests/workflow/test-survey-system.sh
 tests/maintenance/test-harness-release-classification.sh
 tests/maintenance/test-render-changelog-files.sh
 tests/release/test-harness-release-workflow-contract.sh

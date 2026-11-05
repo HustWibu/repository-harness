@@ -71,6 +71,9 @@ payloads=(
   .claude/skills/onboard-repository/references/untracked-install.md
   .claude/skills/onboard-repository/scripts/emit_evidence_bundle.py
   .claude/skills/onboard-repository/scripts/render_patch.py
+  .claude/skills/survey-system/SKILL.md
+  .claude/skills/survey-system/references/page-shapes.md
+  .claude/skills/survey-system/scripts/pin_sources.py
   docs/WORKFLOW.md
   docs/README.md
   docs/patterns/encoding-invariants.md

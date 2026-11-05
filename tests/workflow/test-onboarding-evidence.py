@@ -265,7 +265,7 @@ class OnboardingEvidenceTests(unittest.TestCase):
         skills = self.root / ".claude/skills"
         self.assertEqual({path.name for path in skills.iterdir()}, {
             "onboard-repository", "audit-onboarding-proposal", "improve-harness",
-            "encode-invariant",
+            "encode-invariant", "survey-system",
         })
         for skill in skills.iterdir():
             with self.subTest(skill=skill.name):

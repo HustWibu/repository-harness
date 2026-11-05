@@ -141,6 +141,15 @@ Brownfield onboarding is explicit and read-only first:
 /onboard-repository
 ```
 
+A multi-repository survey runs in a shared knowledge hub, read-only until you
+approve its pages: per-repository pages, a contract matrix with closed
+statuses, pinned sources that `hub check-fresh` follows, and open questions
+(decision 0040):
+
+```text
+/survey-system
+```
+
 Harness improvement is also explicit and requires baseline-to-rerun evidence:
 
 ```text

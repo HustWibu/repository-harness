@@ -12,6 +12,7 @@ positive_paths=(
   .claude/skills/onboard-repository/SKILL.md
   .claude/skills/audit-onboarding-proposal/scripts/validate_evidence_capsule.py
   .claude/skills/encode-invariant/SKILL.md
+  .claude/skills/survey-system/SKILL.md
   .claude/skills/improve-harness/SKILL.md
   docs/WORKFLOW.md
   docs/patterns/encoding-invariants.md
