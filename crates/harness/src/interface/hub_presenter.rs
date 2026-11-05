@@ -9,6 +9,16 @@ struct HubOutput<'a> {
     mode: &'static str,
     ok: bool,
     members: Vec<MemberOutput<'a>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    workspace: Option<WorkspaceOutput<'a>>,
+}
+
+#[derive(Serialize)]
+struct WorkspaceOutput<'a> {
+    path: &'a str,
+    outcome: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    detail: Option<&'a str>,
 }
 
 #[derive(Serialize)]
@@ -25,6 +35,7 @@ fn outcome(outcome: &MemberOutcome) -> (&'static str, Option<&str>) {
         MemberOutcome::Current => ("current", None),
         MemberOutcome::Updated => ("updated", None),
         MemberOutcome::WouldUpdate => ("stale", None),
+        MemberOutcome::Covered => ("covered", None),
         MemberOutcome::Failed(reason) => ("failed", Some(reason)),
     }
 }
@@ -55,6 +66,14 @@ pub fn present_hub_sync(report: &HubReport, json: bool) -> CommandExit {
                     }
                 })
                 .collect(),
+            workspace: report.workspace.as_ref().map(|workspace| {
+                let (outcome, detail) = outcome(&workspace.outcome);
+                WorkspaceOutput {
+                    path: &workspace.path,
+                    outcome,
+                    detail,
+                }
+            }),
         };
         return CommandExit {
             code,
@@ -63,7 +82,19 @@ pub fn present_hub_sync(report: &HubReport, json: bool) -> CommandExit {
         };
     }
 
-    let mut out = format!("Hub members ({mode}):\n");
+    let mut out = String::new();
+    if let Some(workspace) = &report.workspace {
+        let (label, detail) = outcome(&workspace.outcome);
+        out.push_str(&format!(
+            "Workspace ({mode}):\n  {label} {}",
+            workspace.path
+        ));
+        if let Some(detail) = detail {
+            out.push_str(&format!(": {detail}"));
+        }
+        out.push('\n');
+    }
+    out.push_str(&format!("Hub members ({mode}):\n"));
     if report.members.is_empty() {
         out.push_str(
             "  none listed with a relative Location under Related Repositories in docs/README.md\n",

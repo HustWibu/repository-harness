@@ -43,11 +43,23 @@ A hub that is itself a Git repository removes that objection.
    member's `CLAUDE.md`. It writes only inside the markers, keeps all other
    text, refuses symlinks and non-Git targets, never commits, and reports one
    line per member. `--dry-run` previews; `--check` writes nothing and exits 1
-   when any member is stale or unreachable.
+   when any member is stale or unreachable. A member whose
+   `docs/services/<repository>/` is missing in the hub fails instead of being
+   pointed at a directory that does not exist.
+6. **`harness hub sync --workspace` writes one block instead**, into the
+   `CLAUDE.md` of the directory that holds the hub. Claude Code loads that file
+   in every repository below it, so members are only checked (Git root, below
+   that directory, hub folder present) and not written. The block names the hub
+   by absolute path because sessions run in members, not in that directory. It
+   refuses when that directory is inside a Git repository. Use it when
+   repositories are cloned side by side and their `CLAUDE.md` is not committed;
+   use per-member sync when each member commits its `CLAUDE.md` and the pointer
+   must reach other clones.
 
 This amends decision 0035, which said Harness never writes another repository:
 `harness hub sync`, when the user runs it in the hub, is the one exception, and
-it writes only the marked block. Install, update, and every other command still
+it writes only the marked block, either in each member or, with `--workspace`,
+in the directory that holds the hub. Install, update, and every other command still
 touch only their own target. Decision 0033 is superseded.
 
 ## Alternatives Considered
@@ -76,8 +88,13 @@ Tradeoffs:
   different layout makes `hub sync` fail for that member.
 - Harness skills are installed only in the hub, so they are available when
   Claude Code is opened in the hub, not in a member.
-- The pointer edit in a member is an ordinary change to a tracked `CLAUDE.md`;
-  the member's owners still review and commit it.
+- Where a member tracks its `CLAUDE.md`, the pointer edit is an ordinary change
+  its owners review and commit. Where `CLAUDE.md` is ignored or untracked, as
+  in a workspace where 40 of 48 members ignore it, the pointer exists only on
+  the machine that ran sync, so each developer runs sync; `--workspace` makes
+  that one file instead of one per member.
+- The workspace block is machine-local and names an absolute path; it is not
+  shared through Git.
 
 ## Follow-Up
 

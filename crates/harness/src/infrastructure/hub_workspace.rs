@@ -2,7 +2,7 @@ use std::fs;
 use std::path::{Component, Path, PathBuf};
 use std::process::Command;
 
-use crate::application::{HubWorkspacePort, MemberCheckout, PortError};
+use crate::application::{HubWorkspacePort, MemberCheckout, PortError, WorkspaceCheckout};
 
 #[derive(Clone, Copy, Default)]
 pub struct FileSystemHubWorkspace;
@@ -12,6 +12,10 @@ impl HubWorkspacePort for FileSystemHubWorkspace {
         let path = hub.join("docs/README.md");
         fs::read_to_string(&path)
             .map_err(|error| PortError::new(format!("{}: {error}", path.display())))
+    }
+
+    fn has_member_docs(&self, hub: &Path, member: &str) -> Result<bool, PortError> {
+        Ok(hub.join("docs/services").join(member).is_dir())
     }
 
     fn resolve_member(&self, hub: &Path, location: &str) -> Result<MemberCheckout, PortError> {
@@ -42,6 +46,30 @@ impl HubWorkspacePort for FileSystemHubWorkspace {
         }
         Ok(MemberCheckout {
             hub_from_member: relative(&root, &hub),
+            root,
+        })
+    }
+
+    fn resolve_workspace(&self, hub: &Path) -> Result<WorkspaceCheckout, PortError> {
+        let hub = canonical(hub)?;
+        let root = hub
+            .parent()
+            .ok_or_else(|| PortError::new("the hub has no parent directory"))?
+            .to_path_buf();
+        let output = Command::new("git")
+            .args(["rev-parse", "--show-toplevel"])
+            .current_dir(&root)
+            .output()
+            .map_err(|error| PortError::new(format!("git: {error}")))?;
+        if output.status.success() {
+            return Err(PortError::new(format!(
+                "{} is inside the Git repository {}; run `harness hub sync` without --workspace",
+                root.display(),
+                String::from_utf8_lossy(&output.stdout).trim_end()
+            )));
+        }
+        Ok(WorkspaceCheckout {
+            hub_path: hub.display().to_string(),
             root,
         })
     }
@@ -135,6 +163,11 @@ mod tests {
         assert!(FileSystemHubWorkspace
             .resolve_member(&hub, "../absent")
             .is_err());
+
+        let error = FileSystemHubWorkspace
+            .resolve_workspace(&Path::new(env!("CARGO_MANIFEST_DIR")).join("src"))
+            .unwrap_err();
+        assert!(error.to_string().contains("without --workspace"));
 
         #[cfg(unix)]
         {

@@ -114,6 +114,8 @@ require docs/WORKFLOW.md 'Configuration checked into a repository may describe o
 require docs/templates/application-runbook.md '## Environments'
 require docs/README.md '### Shared Knowledge Hub'
 require docs/product/installation-profiles.md '## Shared Knowledge Hub'
+require docs/README.md 'hub sync --workspace'
+require docs/product/installation-profiles.md '`--workspace` writes one block'
 require docs/templates/application-runbook.md 'a missing key is a finding to report'
 require docs/templates/evaluator-rubric.md '| Evidence scope |'
 require docs/templates/exec-plan.md '## Repositories Touched'
