@@ -63,7 +63,7 @@ The exact payload is declared in
 From a target repository:
 
 ```bash
-curl -fsSL "https://raw.githubusercontent.com/hoangnb24/repository-harness/main/scripts/install-harness.sh?$(date +%s)" |
+curl -fsSL "https://raw.githubusercontent.com/HustWibu/repository-harness/main/scripts/install-harness.sh?$(date +%s)" |
   bash -s -- --yes
 ```
 

@@ -60,7 +60,8 @@ consumer who needed the second host.
   releases from the upstream `hoangnb24/repository-harness` repository, which
   ships the `AGENTS.md` core. Until this fork publishes its own releases and
   points those URLs at them, only local-source installs and
-  `update --candidate` deliver this decision.
+  `update --candidate` deliver this decision. Decision 0038 points them at
+  this fork.
 - Decisions 0026 and 0029 remain valid for skill explicitness, receipts, and
   budgets; their references to `.agents/skills/` and `agents/openai.yaml` are
   historical.

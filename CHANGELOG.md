@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-11-05 - harness-v0.2.0 (fork release)
+
+First release published from `HustWibu/repository-harness` (decision 0038).
+These changes were pushed to `main` directly, so no per-PR entries exist:
+
+- Multi-repository surfaces: Related Repositories, Authority By Truth Type,
+  evidence scope, repositories-touched tables, interface-contract template,
+  cross-repository invariants, boundary edges (decision 0035).
+- `--local-only` and `--remove-local-only` installs through
+  `.git/info/exclude` (decision 0034).
+- Shared knowledge hub: `harness hub sync` and `hub sync --workspace`
+  (decision 0036).
+- Onboarding from a hub with capsule sources in related repositories
+  (decision 0037); untracked-install handling for `/onboard-repository`.
+- Installs ship a consumer `docs/README.md` instead of this repository's map.
+- Bootstrap, installer, and `harness update` fetch releases from this fork.
+
 ## 2026-08-13 - PR #66
 
 - fix(installer): reject unknown PowerShell parameters (@hoangnb24)
