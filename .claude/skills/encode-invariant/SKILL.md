@@ -1,7 +1,6 @@
 ---
 name: encode-invariant
-description: Use only when the user explicitly invokes `/encode-invariant`. Convert accepted repository rules into native mechanical validation with positive and negative proof. Do not infer policy from conventions, code patterns, tests, defaults, or undocumented preferences.
-disable-model-invocation: true
+description: Use when implementing an accepted repository rule as a native mechanical check. Establish policy authority first, then prove both compliant and violating cases. Do not invent rules from conventions or defaults.
 ---
 
 # Encode Invariant

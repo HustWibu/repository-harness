@@ -60,6 +60,9 @@ fn hub_sync_writes_only_the_pointer_block_and_check_detects_drift() {
     assert_eq!(report["members"].as_array().unwrap().len(), 2);
     assert_eq!(report["members"][0]["outcome"], "updated");
 
+    assert!(fs::read_to_string(orders.join("AGENTS.md"))
+        .unwrap()
+        .contains("../system-knowledge/docs/services/orders-service/"));
     let orders_claude = fs::read_to_string(orders.join("CLAUDE.md")).unwrap();
     assert!(
         orders_claude.starts_with("# Orders team rules\nkeep this\n\n<!-- HARNESS-HUB:BEGIN -->")
@@ -75,6 +78,14 @@ fn hub_sync_writes_only_the_pointer_block_and_check_detects_drift() {
         fs::read_to_string(orders.join("CLAUDE.md")).unwrap(),
         orders_claude
     );
+
+    // Drift in Codex alone must make the joint check stale.
+    fs::write(orders.join("AGENTS.md"), "# Codex team rules\n").unwrap();
+    assert_eq!(harness(&["--check"], &hub).status.code(), Some(1));
+    assert!(harness(&[], &hub).status.success());
+    assert!(fs::read_to_string(orders.join("AGENTS.md"))
+        .unwrap()
+        .starts_with("# Codex team rules\n"));
 
     // A listed member that is not a Git root fails without touching others.
     fs::create_dir_all(workspace.path().join("plain")).unwrap();
@@ -108,7 +119,7 @@ fn hub_sync_without_a_map_section_is_an_error() {
 }
 
 #[test]
-fn hub_sync_workspace_writes_only_the_parent_claude_and_keeps_its_text() {
+fn hub_sync_workspace_writes_both_parent_entries_and_keeps_their_text() {
     let workspace = tempfile::tempdir().unwrap();
     let root = workspace.path().canonicalize().unwrap();
     let hub = root.join("system-knowledge");
@@ -120,14 +131,21 @@ fn hub_sync_workspace_writes_only_the_parent_claude_and_keeps_its_text() {
     }
     fs::write(hub.join("docs/README.md"), MAP).unwrap();
     fs::write(root.join("CLAUDE.md"), "# Workspace notes\nkeep this\n").unwrap();
+    fs::write(root.join("AGENTS.md"), "# Codex notes\n").unwrap();
 
     let check = harness(&["--workspace", "--check"], &hub);
     assert_eq!(check.status.code(), Some(1));
     let stdout = String::from_utf8_lossy(&check.stdout);
     assert!(stdout.contains("stale"), "{stdout}");
-    assert!(stdout.contains("covered orders-service"), "{stdout}");
+    assert!(stdout.contains("stale orders-service"), "{stdout}");
 
     assert!(harness(&["--workspace"], &hub).status.success());
+    let agents = fs::read_to_string(root.join("AGENTS.md")).unwrap();
+    assert!(agents.starts_with("# Codex notes\n\n<!-- HARNESS-HUB:BEGIN -->"));
+    assert!(agents.contains(&format!("`{}/docs/services/<repository>/`", hub.display())));
+    assert!(fs::read_to_string(root.join("orders-service/AGENTS.md"))
+        .unwrap()
+        .contains("`../system-knowledge/docs/services/orders-service/`"));
     let claude = fs::read_to_string(root.join("CLAUDE.md")).unwrap();
     assert!(claude.starts_with("# Workspace notes\nkeep this\n\n<!-- HARNESS-HUB:BEGIN -->"));
     assert!(claude.contains(&format!("`{}/docs/services/<repository>/`", hub.display())));
@@ -217,4 +235,30 @@ fn hub_check_fresh_follows_cited_lines_across_member_commits() {
     assert!(String::from_utf8_lossy(&sync.stdout).contains("unlisted stray-tool"));
     assert!(!String::from_utf8_lossy(&sync.stdout).contains("unlisted system-knowledge"));
     assert!(!String::from_utf8_lossy(&sync.stdout).contains("unlisted .worktree-copy"));
+}
+
+#[cfg(unix)]
+#[test]
+fn hub_sync_refuses_codex_symlink_before_changing_claude() {
+    let workspace = tempfile::tempdir().unwrap();
+    let hub = workspace.path().join("hub");
+    let member = workspace.path().join("orders-service");
+    git_repo(&hub);
+    git_repo(&member);
+    fs::create_dir_all(hub.join("docs/services/orders-service")).unwrap();
+    fs::write(
+        hub.join("docs/README.md"),
+        "## Related Repositories\n| Repository | Role | Location |\n| --- | --- | --- |\n| orders-service | service | ../orders-service |\n",
+    )
+    .unwrap();
+    fs::write(member.join("CLAUDE.md"), "team rules\n").unwrap();
+    let outside = workspace.path().join("outside");
+    fs::write(&outside, "keep\n").unwrap();
+    std::os::unix::fs::symlink(&outside, member.join("AGENTS.md")).unwrap();
+    assert_eq!(harness(&[], &hub).status.code(), Some(1));
+    assert_eq!(
+        fs::read_to_string(member.join("CLAUDE.md")).unwrap(),
+        "team rules\n"
+    );
+    assert_eq!(fs::read_to_string(outside).unwrap(), "keep\n");
 }

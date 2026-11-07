@@ -1,7 +1,6 @@
 ---
 name: audit-onboarding-proposal
-description: Use only when the user explicitly invokes `/audit-onboarding-proposal`. Independently audit an onboarding transcript and exact evidence-backed proposals. Remain read-only and verify claims against pinned repository evidence rather than trusting the producer.
-disable-model-invocation: true
+description: Use when independently auditing an onboarding transcript or evaluating exact documentation proposals against pinned evidence. Stay read-only and require the raw transcript and expected digest.
 ---
 
 # Audit Onboarding Proposal
@@ -34,6 +33,8 @@ and return hunk-level apply or no-apply decisions.
 - Separate the environmental result gate from output correctness. A runtime
   manager that is genuinely unobservable may fail the result gate even when the
   producer correctly reports that limitation.
+
+Resolve `<name-skill-dir>` from the discovered absolute path of that skill.
 
 ## Inputs
 
@@ -111,7 +112,7 @@ marked diff hunks in the completed assistant message. After authenticating the
 raw transcript, run:
 
 ```text
-python3 .claude/skills/audit-onboarding-proposal/scripts/validate_evidence_capsule.py --transcript <raw-session.jsonl> --expected-transcript-sha256 <sha256> --repository <tested-worktree>
+python3 "<audit-onboarding-proposal-skill-dir>/scripts/validate_evidence_capsule.py" --transcript <raw-session.jsonl> --expected-transcript-sha256 <sha256> --repository <tested-worktree>
 ```
 
 The validator is read-only. It verifies capsule structure, referential

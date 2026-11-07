@@ -8,7 +8,7 @@ The normal entrypoint is `scripts/validate-premerge.sh`.
 
 - path, hash, provenance, and distribution validation;
 - clean architecture, including allowed and forbidden nested-module fixtures;
-- install, status, and doctor;
+- dual-host install, status, doctor, upgrade, and local-file collision handling;
 - three-way updates and conflict staging;
 - complete-plan drift detection;
 - checksum and release identity;
@@ -19,8 +19,8 @@ The normal entrypoint is `scripts/validate-premerge.sh`.
 
 | Location | Protects |
 | --- | --- |
-| `tests/workflow/` | Installed repository context and explicit skill configuration (textual checks), plus onboarding evidence behavior (CLI integration) |
-| `tests/installer/` | Fresh core installation, merge/override, shims, optional engineering advice, manifest integrity, and platform parity |
+| `tests/workflow/` | Installed repository context and automatic skill configuration (textual checks), plus Claude/Codex onboarding transcript evidence (CLI integration) |
+| `tests/installer/` | Global startup wiring, backup/rollback/removal, fresh dual-host installation, generated adapter parity, merge/override, shims, optional engineering advice, manifest integrity, and platform parity |
 | `tests/docs/` | Current authority, links, EOL boundary, and validation entrypoints |
 | `tests/maintenance/` | Core release classification and changelog rendering |
 | `tests/release/` | Core workflow, exact assets, source identity, promotion, and post-merge recovery |

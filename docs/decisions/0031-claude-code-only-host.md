@@ -2,7 +2,7 @@
 status: proposed
 approved_by: ""
 approved_at: ""
-superseded_by: ""
+superseded_by: "0041"
 ---
 
 # 0031 Claude Code As The Only Agent Host

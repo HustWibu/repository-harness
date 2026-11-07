@@ -88,7 +88,7 @@ pub enum Command {
 
 #[derive(Debug, Subcommand)]
 pub enum HubCommand {
-    /// Write the pointer block into the CLAUDE.md of every member repository
+    /// Write the pointer block into CLAUDE.md and AGENTS.md of every member repository
     /// listed under Related Repositories in the hub's docs/README.md.
     ///
     /// Only the marked block is written; text outside it is kept. Nothing is
@@ -104,9 +104,9 @@ pub enum HubCommand {
         /// Write nothing; exit 1 if any member is stale or unreachable.
         #[arg(long)]
         check: bool,
-        /// Write one block into the CLAUDE.md of the directory holding the
-        /// hub instead of each member; members are only checked. For
-        /// repositories cloned side by side whose CLAUDE.md is not committed.
+        /// Write one block into CLAUDE.md and AGENTS.md of the directory holding the
+        /// hub, plus a Codex AGENTS.md pointer in each member Git root. For
+        /// repositories cloned side by side whose instruction files are not committed.
         #[arg(long)]
         workspace: bool,
         #[arg(long)]

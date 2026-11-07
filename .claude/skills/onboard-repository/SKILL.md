@@ -1,13 +1,14 @@
 ---
 name: onboard-repository
-description: Use only when the user explicitly invokes `/onboard-repository`. Inspect an unfamiliar repository, trace one operational path, identify missing capabilities, and propose evidence-backed knowledge improvements. The first pass is read-only; apply exact approved items only within the requested scope.
-disable-model-invocation: true
+description: Use when onboarding or mapping an unfamiliar repository, tracing an operational path, or finding gaps in repository knowledge. Inspect first and propose evidence-backed improvements; apply changes only within the authorized scope.
 ---
 
 # Onboard Repository
 
 Turn an unfamiliar repository into a verified map for future work. Treat the
 repository as the system of record. Separate facts from gaps and suggestions.
+
+Resolve `<name-skill-dir>` from the discovered absolute path of that skill.
 
 ## Safety Contract
 
@@ -263,7 +264,7 @@ complete bytes to the bundled renderer:
 
 ```text
 <non-materializing command that prints the complete after image> |
-  python3 .claude/skills/onboard-repository/scripts/render_patch.py \
+  python3 "<onboard-repository-skill-dir>/scripts/render_patch.py" \
     --repository <tested-root> \
     --revision <full-tested-revision> \
     --destination <repository-relative-path> \
@@ -362,7 +363,7 @@ There are no patch IDs or edits to approve in this outcome.
 
 ```text
 <non-materializing command that prints the JSON spec> |
-  python3 .claude/skills/onboard-repository/scripts/emit_evidence_bundle.py \
+  python3 "<onboard-repository-skill-dir>/scripts/emit_evidence_bundle.py" \
     --repository <tested-root> \
     --revision <full-tested-revision> \
     --branch <tested-branch>
@@ -419,7 +420,7 @@ the prose gate rather than silently upgrading them.
 When the sibling audit skill is installed, its read-only validator is:
 
 ```text
-python3 .claude/skills/audit-onboarding-proposal/scripts/validate_evidence_capsule.py --transcript <raw-session.jsonl> --expected-transcript-sha256 <sha256> --repository <tested-worktree>
+python3 "<audit-onboarding-proposal-skill-dir>/scripts/validate_evidence_capsule.py" --transcript <raw-session.jsonl> --expected-transcript-sha256 <sha256> --repository <tested-worktree>
 ```
 
 The validator can run only after the transcript exists. For new runs it

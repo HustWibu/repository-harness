@@ -6,6 +6,12 @@ classifier="$root/scripts/harness-release-changed.sh"
 workflow="$root/.github/workflows/post-merge-maintenance.yml"
 
 positive_paths=(
+  AGENTS.md
+  .agents/skills/onboard-repository/SKILL.md
+  .agents/skills/encode-invariant/agents/openai.yaml
+  scripts/sync-codex-skills.py
+  scripts/register-global-harness.py
+  tests/installer/test-install-global.py
   crates/harness/src/main.rs
   crates/harness/assets/docs/plans/README.md
   crates/harness/assets/docs/README.md

@@ -152,8 +152,8 @@ impl HubWorkspacePort for FileSystemHubWorkspace {
         ))
     }
 
-    fn read_claude(&self, member: &Path) -> Result<Option<String>, PortError> {
-        let path = claude_path(member)?;
+    fn read_entry(&self, member: &Path, entry: &str) -> Result<Option<String>, PortError> {
+        let path = entry_path(member, entry)?;
         match fs::read_to_string(&path) {
             Ok(content) => Ok(Some(content)),
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
@@ -161,10 +161,16 @@ impl HubWorkspacePort for FileSystemHubWorkspace {
         }
     }
 
-    fn write_claude(&self, member: &Path, content: &str) -> Result<(), PortError> {
-        let path = claude_path(member)?;
-        let temp = member.join(".CLAUDE.md.harness-hub.tmp");
-        fs::write(&temp, content)
+    fn write_entry(&self, member: &Path, entry: &str, content: &str) -> Result<(), PortError> {
+        let path = entry_path(member, entry)?;
+        let temp = member.join(format!(".{entry}.harness-hub.tmp"));
+        use std::io::Write;
+        let mut file = fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&temp)
+            .map_err(|error| PortError::new(format!("{}: {error}", temp.display())))?;
+        file.write_all(content.as_bytes())
             .and_then(|_| fs::rename(&temp, &path))
             .map_err(|error| {
                 let _ = fs::remove_file(&temp);
@@ -173,9 +179,12 @@ impl HubWorkspacePort for FileSystemHubWorkspace {
     }
 }
 
-/// Refuse a symlinked CLAUDE.md so a write cannot land outside the member.
-fn claude_path(member: &Path) -> Result<PathBuf, PortError> {
-    let path = member.join("CLAUDE.md");
+/// Refuse symlinked instruction files so a write cannot land outside the member.
+fn entry_path(member: &Path, entry: &str) -> Result<PathBuf, PortError> {
+    if !matches!(entry, "CLAUDE.md" | "AGENTS.md") {
+        return Err(PortError::new("unsupported agent entrypoint"));
+    }
+    let path = member.join(entry);
     match fs::symlink_metadata(&path) {
         Ok(metadata) if metadata.file_type().is_symlink() => Err(PortError::new(format!(
             "refusing symlink: {}",
@@ -263,8 +272,12 @@ mod tests {
         #[cfg(unix)]
         {
             std::os::unix::fs::symlink("/etc/hosts", plain.join("CLAUDE.md")).unwrap();
-            assert!(FileSystemHubWorkspace.read_claude(&plain).is_err());
-            assert!(FileSystemHubWorkspace.write_claude(&plain, "x").is_err());
+            assert!(FileSystemHubWorkspace
+                .read_entry(&plain, "CLAUDE.md")
+                .is_err());
+            assert!(FileSystemHubWorkspace
+                .write_entry(&plain, "CLAUDE.md", "x")
+                .is_err());
         }
     }
 }

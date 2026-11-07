@@ -4,7 +4,8 @@ set -euo pipefail
 # Exit successfully only when a changed path can alter the core-maintenance
 # binary, its embedded payload, bootstrap contract, or release proof.
 pattern='^('
-pattern+='\.claude/skills/(onboard-repository|audit-onboarding-proposal|encode-invariant|improve-harness|survey-system)/|'
+pattern+='\.(claude|agents)/skills/(onboard-repository|audit-onboarding-proposal|encode-invariant|improve-harness|survey-system)/|'
+pattern+='AGENTS\.md$|CLAUDE\.md$|scripts/(sync-codex-skills|register-global-harness)\.py$|'
 pattern+='crates/harness/|Cargo\.toml$|Cargo\.lock$|'
 pattern+='docs/(WORKFLOW|README)\.md$|docs/patterns/(encoding-invariants|multi-repository-evidence)\.md$|docs/product/README\.md$|'
 pattern+='docs/plans/active/README\.md$|docs/templates/(application-runbook|decision|exec-plan|harness-improvement|session-handoff|evaluator-rubric|interface-contract)\.md$|'
@@ -12,6 +13,7 @@ pattern+='scripts/(claude-harness-block\.md|harness-install-files\.txt|harness-r
 pattern+='scripts/(install-harness|build-harness-release|harness-release-changed|promote-harness-release-tag|verify-harness-release-assets|verify-harness-release-identity)\.sh$|'
 pattern+='\.github/workflows/(harness-release|post-merge-maintenance)\.yml$|'
 pattern+='tests/installer/test-install-(harness-modes|local-only)\.sh$|'
+pattern+='tests/installer/test-install-global\.py$|'
 pattern+='tests/maintenance/test-harness-release-classification\.sh$'
 pattern+=')'
 grep -Eq "$pattern"

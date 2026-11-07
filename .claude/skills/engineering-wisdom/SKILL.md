@@ -1,7 +1,6 @@
 ---
 name: engineering-wisdom
-description: Use only when the user explicitly invokes `/engineering-wisdom`. Provide repository-grounded engineering advice using contextual heuristics. Advice does not establish repository policy or authorize an architecture rewrite.
-disable-model-invocation: true
+description: Use when evaluating software design, engineering trade-offs, or code quality against repository evidence. Offer contextual advice; heuristics do not establish policy or authorize architecture rewrites.
 ---
 
 # Engineering Wisdom
@@ -13,8 +12,7 @@ Repository intent, code, tests, and observed behavior remain authoritative.
 
 1. Read `CLAUDE.md`, `docs/WORKFLOW.md`, and only the repository material
    relevant to the request.
-2. Confirm that the user explicitly invoked this skill. Installation alone is
-   not activation.
+2. Match the advice to the requested outcome; keep unrelated heuristics out.
 3. Determine whether the request is advice/review or an authorized change.
    Keep reviews read-only. For changes, follow repository authority and
    validation rules before editing.

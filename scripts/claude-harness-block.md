@@ -2,9 +2,9 @@
 ## Harness
 
 Start with the requested outcome and use the repository as the system of record.
-Find the relevant code, interfaces, commands, tests, and evidence through the
-repository map in `docs/README.md`. `docs/WORKFLOW.md` describes repository
-understanding, missing capabilities, authority, and trust.
+Read applicable repository instructions. Use `docs/README.md` when present;
+otherwise inspect native code, commands, tests, and configuration.
+`docs/WORKFLOW.md` describes authority, evidence, and missing capabilities.
 
 - Respect the requested scope. Inspection does not authorize edits or operation.
 - Prefer source references over duplicate summaries. Preserve product intent
@@ -15,8 +15,10 @@ understanding, missing capabilities, authority, and trust.
   Stop at material unresolved choices; configurable defaults are not authority.
 - Preserve user-owned state and use the repository's native safety and validation
   checks. Explain observed results and their limits.
-- Only invoke a Harness skill when the user explicitly requests it.
+- Select relevant Harness skills from the requested outcome; names are optional.
+- For changes: inspect the affected path, implement within authorized scope,
+  run native checks, and report verified results and remaining gaps.
 
 Consumer repositories own their task workflow and planning. Harness provides
-context and optional tools, without a task database or orchestration lifecycle.
+context and relevant skills, without a task database or orchestration lifecycle.
 <!-- HARNESS:END -->

@@ -15,6 +15,8 @@ while IFS= read -r script; do
   bash -n "$script"
 done < <(find scripts tests -type f -name '*.sh' -print | LC_ALL=C sort)
 
+python3 scripts/sync-codex-skills.py --check
+
 cargo fmt --all -- --check
 cargo test --workspace --locked
 cargo clippy --workspace --all-targets --locked -- -D warnings
@@ -23,6 +25,7 @@ tests/installer/assert-claude-authority-contract.sh
 tests/installer/assert-install-manifest-links.sh
 tests/installer/test-install-harness-modes.sh
 tests/installer/test-install-local-only.sh
+python3 -B tests/installer/test-install-global.py
 tests/installer/test-engineering-wisdom-opt-in.sh
 tests/docs/test-doc-contracts.sh
 tests/docs/test-context-budget.sh

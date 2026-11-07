@@ -1,7 +1,6 @@
 ---
 name: survey-system
-description: Use only when the user explicitly invokes `/survey-system`. Survey a multi-repository system from its hub: per-repository pages, a cross-repository contract matrix with closed statuses, pinned sources, and open questions. Read-only until the user approves the pages.
-disable-model-invocation: true
+description: Use when surveying multiple repositories from a shared knowledge hub, mapping ownership, or checking cross-repository contracts. Inspect first; agree on scope and obtain approval before writing proposed pages.
 ---
 
 # Survey System

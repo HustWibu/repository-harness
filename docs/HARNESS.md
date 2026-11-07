@@ -12,15 +12,15 @@ and build trust through executable or observable evidence.
   not substitute assumptions for authority or evidence.
 - Consumer repositories own their workflows, planning, application operation,
   architecture, and validation commands.
-- All Harness skills require explicit user invocation. Templates are optional.
+- Harness selects relevant skills automatically. Templates are optional.
 - The maintenance binary preserves provenance and safely updates only its core.
 
 ## Installed Core
 
-Core supplies a compact `CLAUDE.md` entrypoint and repository map, context
+Core supplies compact `CLAUDE.md` and `AGENTS.md` entrypoints and repository map, context
 about authority, capabilities and evidence, optional templates, and
-explicit-only Claude Code skills under `.claude/skills/`. Claude Code is the
-only supported agent host (decision 0031).
+task-triggered skills under `.claude/skills/` and `.agents/skills/` for
+Claude Code and Codex (decision 0041).
 It supplies no fabricated product domains, application commands, credentials,
 task scheduler, database, or workflow engine.
 
@@ -36,3 +36,7 @@ proof.
 The SQLite control plane and protocol v1 remain historical products, available
 through immutable releases and Git history. Existing consumer files are not
 automatically removed by installation or updates.
+
+Global installation (decision 0042) loads the shared protocol for every new
+Claude Code and Codex session. It preserves user instructions, registers native
+skill directories, and lets repository instructions retain product authority.

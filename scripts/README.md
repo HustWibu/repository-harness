@@ -9,11 +9,15 @@ scripts/validate-premerge.sh
 ## Installation
 
 - `install-harness.sh`: Bash bootstrap for the versioned Rust `harness`
-  candidate.
+  candidate; `--global` registers it once for both hosts.
 - `harness-install-files.txt`: exact embedded core payload.
 - `engineering-wisdom-install-files.txt`: independent optional advisory
   payload.
-- `claude-harness-block.md`: the managed Harness block of `CLAUDE.md`.
+- `claude-harness-block.md`: the shared managed block of `CLAUDE.md` and `AGENTS.md`.
+- `register-global-harness.py`: preflight, back up, register, roll back, and
+  remove global instruction blocks and owned skill links.
+- `sync-codex-skills.py`: render Codex skills from the Claude authoring source;
+  `--check` rejects drift.
 
 The bootstraps verify candidate checksum and reported version before delegating
 install or update. They do not contain a database or compatibility profile.

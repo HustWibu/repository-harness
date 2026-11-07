@@ -15,13 +15,12 @@ extract_block() {
 
 cmp -s <(extract_block "$root/CLAUDE.md") "$claude_block"
 
-# Claude Code is the only supported host: no AGENTS.md entrypoint, no
-# .agents/ skill tree, and no Codex skill metadata anywhere in the payload.
-[[ ! -e "$root/AGENTS.md" && ! -e "$root/.agents" ]]
-[[ ! -e "$root/scripts/agent-harness-block.md" ]]
-! grep -Fq 'AGENTS.md' "$claude_block"
-! grep -Eq '(^|/)AGENTS\.md$|^\.agents/|agents/openai\.yaml$' \
-  "$root/scripts/harness-install-files.txt" "$root/scripts/engineering-wisdom-install-files.txt"
+# Both hosts receive the same protocol and native automatic-invocation metadata.
+cmp -s <(extract_block "$root/AGENTS.md") "$claude_block"
+python3 "$root/scripts/sync-codex-skills.py" --check
+for manifest in harness engineering-wisdom; do
+  grep -Fq '.agents/skills/' "$root/scripts/$manifest-install-files.txt"
+done
 
 required_entry_text=(
   'Start with the requested outcome'
@@ -29,7 +28,7 @@ required_entry_text=(
   'missing capabilities'
   'configurable defaults are not authority'
   "repository's native safety and validation"
-  'Only invoke a Harness skill when the user explicitly requests it.'
+  'Select relevant Harness skills from the requested outcome; names are optional.'
   'Consumer repositories own their task workflow and planning.'
 )
 for text in "${required_entry_text[@]}"; do
@@ -48,7 +47,7 @@ required_workflow_text=(
   'Keep unobserved state Unknown.'
   '## Trust Through Evidence'
   'structural checks from semantic or runtime proof'
-  'Only invoke a Harness skill when the user explicitly requests it.'
+  'Select relevant Harness skills from the requested outcome; names are optional.'
 )
 for text in "${required_workflow_text[@]}"; do
   grep -Fq "$text" "$workflow"
@@ -103,17 +102,18 @@ while IFS= read -r skill; do
   case "$skill" in
     .claude/skills/*/SKILL.md)
       frontmatter=$(awk '/^---$/ { n++; next } n == 1 { print } n >= 2 { exit }' "$root/$skill")
-      [[ "$(grep -c '^disable-model-invocation:' <<<"$frontmatter")" == 1 ]]
-      grep -Fxq 'disable-model-invocation: true' <<<"$frontmatter"
-      grep -Eq '^description: Use only when the user explicitly invokes `/[a-z-]+`' <<<"$frontmatter"
+      ! grep -Fxq 'disable-model-invocation: true' <<<"$frontmatter"
+      grep -Eq '^description: Use when ' <<<"$frontmatter"
+      metadata="${skill/.claude\//.agents/}"
+      grep -Fxq '  allow_implicit_invocation: true' "$root/${metadata%SKILL.md}agents/openai.yaml"
       skill_count=$((skill_count + 1))
       ;;
   esac
 done < <(cat "$root/scripts/harness-install-files.txt" "$root/scripts/engineering-wisdom-install-files.txt")
-[[ "$skill_count" == 5 ]]
+[[ "$skill_count" == 6 ]]
 
 invariant_skill="$root/.claude/skills/encode-invariant/SKILL.md"
-grep -Fq 'Do not infer policy from conventions, code patterns, tests, defaults, or undocumented preferences.' \
+grep -Fq 'Do not invent rules from conventions or defaults.' \
   "$invariant_skill"
 required_invariant_method=(
   "Reuse the repository's existing test, build, task, lint, scan, or validation"
@@ -138,11 +138,11 @@ grep -Fq 'Do not add, edit, delete, enable, or execute a guard during onboarding
 
 grep -Fq 'read_source_text "scripts/claude-harness-block.md"' "$root/scripts/install-harness.sh"
 grep -Fq 'REFRESH_CLAUDE_SHIM=1' "$root/scripts/install-harness.sh"
-! grep -Eq 'AGENTS\.md|agent-harness-block|REFRESH_AGENT_SHIM|INSTALL_CLAUDE_SHIM' "$root/scripts/install-harness.sh"
+grep -Fq 'REFRESH_AGENT_SHIM=1' "$root/scripts/install-harness.sh"
 grep -Fq 'ENGINEERING_WISDOM_PAYLOAD_MANIFEST="scripts/engineering-wisdom-install-files.txt"' "$root/scripts/install-harness.sh"
 ! grep -Fq 'CLI_PAYLOAD_MANIFEST' "$root/scripts/install-harness.sh"
 
 # Linux and macOS only: no PowerShell bootstrap or Windows test remains.
 [[ -z "$(find "$root/scripts" "$root/tests" -name '*.ps1' -print -quit)" ]]
 
-echo "Claude Code authority, explicit skill configuration, canonical shim, and Linux/macOS-only installer passed"
+echo "Claude Code authority, automatic skill configuration, dual-host adapters, and Linux/macOS-only installer passed"

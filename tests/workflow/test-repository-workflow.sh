@@ -7,4 +7,4 @@ root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 # This suite does not simulate an agent or claim workflow compliance.
 python3 "$root/tests/workflow/test-onboarding-evidence.py"
 
-echo "installed repository context, explicit skill policies, and evidence contracts passed; agent behavior not tested"
+echo "installed repository context, automatic skill policies, and evidence contracts passed; agent behavior not tested"

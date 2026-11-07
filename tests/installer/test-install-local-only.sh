@@ -52,7 +52,8 @@ tracked="$temp/tracked"
 new_repo "$tracked"
 printf 'user-before\n' >"$tracked/.git/info/exclude"
 printf '# team instructions\n' >"$tracked/CLAUDE.md"
-git -C "$tracked" add CLAUDE.md
+printf '# codex instructions\n' >"$tracked/AGENTS.md"
+git -C "$tracked" add CLAUDE.md AGENTS.md
 git -C "$tracked" -c user.email=t@example.invalid -c user.name=t commit -q -m claude
 
 # 2. A tracked CLAUDE.md is skipped and reported; refreshing the shim shows exactly one change.
@@ -65,6 +66,10 @@ grep -Fq 'warning  CLAUDE.md is tracked' "$temp/refresh.out" || fail 'tracked sh
 [[ "$(git -C "$tracked" status --porcelain)" == ' M CLAUDE.md' ]] ||
   fail "shim refresh changed more than CLAUDE.md: $(git -C "$tracked" status --porcelain)"
 git -C "$tracked" checkout -q CLAUDE.md
+install --refresh-agent-shim "$tracked" >"$temp/refresh-agents.out"
+grep -Fq 'warning  AGENTS.md is tracked' "$temp/refresh-agents.out" || fail 'Codex refresh did not warn'
+[[ "$(git -C "$tracked" status --porcelain)" == ' M AGENTS.md' ]] || fail 'Codex refresh changed unrelated files'
+git -C "$tracked" checkout -q AGENTS.md
 install --remove-local-only "$tracked" >/dev/null
 grep -Fq 'harness local-only' "$tracked/.git/info/exclude" && fail 'removal left Harness lines'
 [[ "$(cat "$tracked/.git/info/exclude")" == $'user-before\nuser-after' ]] ||

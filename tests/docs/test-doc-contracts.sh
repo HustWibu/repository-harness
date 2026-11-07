@@ -66,7 +66,7 @@ done
 
 require CLAUDE.md 'Start with the requested outcome'
 require CLAUDE.md 'configurable defaults are not authority'
-require CLAUDE.md 'Only invoke a Harness skill when the user explicitly requests it.'
+require CLAUDE.md 'Select relevant Harness skills from the requested outcome; names are optional.'
 require docs/WORKFLOW.md '## Authority And Scope'
 require docs/WORKFLOW.md '## Missing Capabilities'
 require docs/WORKFLOW.md '## Trust Through Evidence'
@@ -221,7 +221,7 @@ while IFS= read -r skill; do
     fail "$skill omits its HARNESS_SKILL receipt instruction"
 done < <(cat "$root/scripts/harness-install-files.txt" \
   "$root/scripts/engineering-wisdom-install-files.txt" |
-  grep -E '^\.claude/skills/[^/]+/SKILL\.md$' | LC_ALL=C sort -u)
+  grep -E '^\.(claude|agents)/skills/[^/]+/SKILL\.md$' | LC_ALL=C sort -u)
 require .claude/skills/encode-invariant/SKILL.md 'Missing frontmatter means not approved'
 
 "$root/tests/installer/assert-claude-authority-contract.sh" >/dev/null

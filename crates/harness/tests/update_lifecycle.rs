@@ -357,3 +357,52 @@ fn application_with_files(
         GitThreeWayMerge,
     )
 }
+
+#[test]
+fn claude_only_install_gains_codex_and_stops_on_existing_codex_instructions() {
+    use harness::infrastructure::EmbeddedCoreDistribution;
+    let incoming = EmbeddedCoreDistribution.current().unwrap();
+    let mut old = incoming.clone();
+    old.version = "0.1.0".to_owned();
+    old.files.retain(|file| {
+        file.path.as_str() != "AGENTS.md" && !file.path.as_str().starts_with(".agents/")
+    });
+    let previous = CoreApplication::new(
+        DistributionFixture(old),
+        FileSystemInstallationState,
+        GitThreeWayMerge,
+    );
+    let next = CoreApplication::new(
+        DistributionFixture(incoming),
+        FileSystemInstallationState,
+        GitThreeWayMerge,
+    );
+    let clean = tempfile::tempdir().unwrap();
+    previous.install(clean.path(), false).unwrap();
+    fs::write(clean.path().join("CLAUDE.md"), "local Claude rules\n").unwrap();
+    assert!(next.update(clean.path(), false).unwrap().applied);
+    assert!(clean.path().join("AGENTS.md").is_file());
+    assert!(clean
+        .path()
+        .join(".agents/skills/encode-invariant/agents/openai.yaml")
+        .is_file());
+    assert_eq!(
+        fs::read_to_string(clean.path().join("CLAUDE.md")).unwrap(),
+        "local Claude rules\n"
+    );
+
+    let collision = tempfile::tempdir().unwrap();
+    previous.install(collision.path(), false).unwrap();
+    fs::write(collision.path().join("AGENTS.md"), "local Codex rules\n").unwrap();
+    let manifest = fs::read(collision.path().join(".harness-core/manifest.json")).unwrap();
+    let result = next.update(collision.path(), false);
+    assert!(result.is_err() || !result.unwrap().applied);
+    assert_eq!(
+        fs::read_to_string(collision.path().join("AGENTS.md")).unwrap(),
+        "local Codex rules\n"
+    );
+    assert_eq!(
+        fs::read(collision.path().join(".harness-core/manifest.json")).unwrap(),
+        manifest
+    );
+}

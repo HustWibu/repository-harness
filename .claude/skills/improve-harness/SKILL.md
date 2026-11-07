@@ -1,7 +1,6 @@
 ---
 name: improve-harness
-description: Use only when the user explicitly invokes `/improve-harness`. Test one authorized improvement to repository guidance or capabilities against an observed baseline and a fresh rerun. Do not infer permission from ordinary work or automatically reflect after tasks.
-disable-model-invocation: true
+description: Use when asked to improve Harness guidance or capabilities after an observed failure. Compare an authorized change with a baseline and fresh rerun. Ordinary application work does not authorize editing Harness.
 ---
 
 # Improve Harness

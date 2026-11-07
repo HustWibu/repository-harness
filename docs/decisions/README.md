@@ -20,7 +20,7 @@ is an available reference, not a required task step.
 | 0028 | Authoritative Invariant Encoding |
 | 0029 | Measured Skills, Context Budget, And Approval Frontmatter (proposed) |
 | 0030 | Evidence-First Completion, Handoff, Rubric, And Gate Retirement (proposed) |
-| 0031 | Claude Code As The Only Agent Host (proposed) |
+| 0031 | Claude Code As The Only Agent Host (superseded by 0041) |
 | 0032 | Linux And macOS Only (proposed) |
 | 0033 | Multi-Repository Workspace Profile (superseded by 0036) |
 | 0034 | Local-Only Installation |
@@ -30,6 +30,8 @@ is an available reference, not a required task step.
 | 0038 | Release From This Fork |
 | 0039 | Hub Knowledge Freshness And Cross-Repository Evidence (proposed) |
 | 0040 | Survey System Skill (proposed) |
+| 0041 | Claude Code And Codex |
+| 0042 | Global Startup And Automatic Skills |
 
 These decisions describe upstream Harness. Installed consumers begin with an
 empty decision index and add only real consumer choices.

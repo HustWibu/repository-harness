@@ -21,8 +21,8 @@ Coding agents often fail for ordinary engineering reasons:
 - an agent invents product policy when the request leaves a material choice
   open.
 
-Harness targets Claude Code only. It provides a compact `CLAUDE.md`
-entrypoint, a navigable repository map, optional
+Harness supports Claude Code and Codex. It provides compact `CLAUDE.md` and
+`AGENTS.md` entrypoints, a navigable repository map, optional
 knowledge-discovery tools, and a safe maintenance binary.
 
 ## Repository Understanding
@@ -32,24 +32,24 @@ Keep product intent and rationale where the repository already owns them.
 Identify missing capabilities needed to act, observe, or verify, and report
 uncertainty rather than inventing commands or claiming unsupported results.
 
-Consumer repositories own task workflow and planning. Harness skills run only
-when explicitly requested; installation does not activate them.
+Consumer repositories own task workflow and planning. Harness selects relevant
+skills automatically from the requested outcome, within the authorized scope.
 
-Start with [`CLAUDE.md`](CLAUDE.md) and the repository map in
+Start with [`CLAUDE.md`](CLAUDE.md) or [`AGENTS.md`](AGENTS.md) and the repository map in
 [`docs/README.md`](docs/README.md).
 
 ## What Gets Installed
 
 The default core contains:
 
-- a compact `CLAUDE.md` entrypoint that Claude Code loads every session;
+- compact `CLAUDE.md` and `AGENTS.md` entrypoints for Claude Code and Codex;
 - repository context and navigation;
 - optional product, decision, and execution-plan locations;
 - optional templates for durable plans, decisions, application runbooks,
   session handoffs, evaluator rubrics, cross-repository interface contracts,
   and evidence-backed Harness improvements; and
-- an invariant-encoding reference and explicit-only Claude Code skills under
-  `.claude/skills/` for discovery, audit, encoding, and improvement.
+- an invariant-encoding reference and task-triggered skills under
+  `.claude/skills/` and `.agents/skills/` for discovery, audit, encoding, and improvement.
 
 It does not install application architecture, product policy, validation
 commands, credentials, a database, schemas, orchestration, or background
@@ -59,6 +59,38 @@ The exact payload is declared in
 [`scripts/harness-install-files.txt`](scripts/harness-install-files.txt).
 
 ## Install
+
+For automatic startup in every project on this machine, install once for both
+Claude Code and Codex:
+
+```bash
+scripts/install-harness.sh --global --yes
+```
+
+From this checkout, that command builds the current core. Remote installation:
+
+```bash
+curl -fsSL "https://raw.githubusercontent.com/HustWibu/repository-harness/main/scripts/install-harness.sh?$(date +%s)" |
+  bash -s -- --global --yes
+```
+
+The remote command requires a published release containing global support.
+The core lives in `~/.local/share/repository-harness` (or under `XDG_DATA_HOME`).
+The installer backs up and adds a managed block to `~/.claude/CLAUDE.md` and
+`~/.codex/AGENTS.md`, and links skills into `~/.claude/skills/` and
+`~/.agents/skills/`. A nonempty `AGENTS.override.md` receives the Codex block
+instead. `CLAUDE_CONFIG_DIR` and `CODEX_HOME` are respected. Existing unrelated
+skills and configuration stay intact; same-name skill collisions stop before
+installation. Start a new session after installation.
+
+Use `--global --dry-run` to preview. Rerun `--global --yes` to update the core
+and refresh registration. `--remove-global` removes only registered links and
+managed instruction blocks; it preserves the installed core and user rules.
+Global registration uses symlinks; managed core files remain regular files.
+No per-project Harness install is needed. A repository's own instructions,
+commands, and product decisions remain authoritative.
+
+For an installation committed or kept locally in one repository:
 
 From a target repository:
 
@@ -70,9 +102,9 @@ curl -fsSL "https://raw.githubusercontent.com/HustWibu/repository-harness/main/s
 Harness supports Linux and macOS (x64 and arm64). Windows is not supported.
 
 Use `--merge` to preserve existing files and add only missing
-Harness paths. An existing `CLAUDE.md` is kept as is; add
-`--refresh-claude-shim` to append or refresh the marked
-Harness block inside it. Use `--override` only when replacement
+Harness paths. Existing `CLAUDE.md` and `AGENTS.md` are kept as is; add
+`--refresh-claude-shim` and/or `--refresh-agent-shim` to append or refresh
+the marked Harness block in the corresponding file. Use `--override` only when replacement
 is intentional. Use `--dry-run` to preview.
 
 Use `--local-only` to try Harness on a shared repository without committing
@@ -81,15 +113,16 @@ unchanged, and `--remove-local-only` deletes only those lines (decision 0034).
 
 For many repositories, make one of them a shared knowledge hub: list the
 members in its `docs/README.md` and run `scripts/bin/harness hub sync` there to
-point each member's `CLAUDE.md` at the hub, or `hub sync --workspace` to write
-one pointer into the `CLAUDE.md` of the directory holding them (decision 0036).
+point each member's `CLAUDE.md` and `AGENTS.md` at the hub, or `hub sync --workspace` to write
+pointers into `CLAUDE.md` and `AGENTS.md` of the directory holding them, plus a Codex pointer in each member Git root
+(decisions 0036 and 0041).
 `hub check-fresh` reports hub facts whose cited member code has changed
 (decision 0039).
 
 The bootstrap downloads a versioned `harness` binary and checksum, verifies
 release identity, and delegates installation to that candidate.
 
-## Maintain An Installation
+## Maintain A Repository Installation
 
 ```bash
 scripts/bin/harness status
@@ -120,7 +153,7 @@ scripts/bin/harness skill-report ~/.claude/projects/<project>/<session>.jsonl
 ```
 
 `skill-report` is read-only and runs only when invoked. It reads the Claude
-Code session files you name and reports, per explicitly invoked skill,
+Code session files you name and reports, per recorded skill invocation,
 invocations, `HARNESS_SKILL:` receipts, and input, cache-creation, cache-read,
 and output tokens (`--json` for machines). It prints aggregates only, writes
 nothing, and rejects other session formats. Receipts are self-reported, so the
@@ -162,10 +195,17 @@ Engineering advice is a separate opt-in payload:
 scripts/install-harness.sh --with-engineering-wisdom --yes /path/to/project
 ```
 
-All Harness skills require explicit user invocation, including invariant
-encoding: each `SKILL.md` sets `disable-model-invocation: true`, so Claude Code
-runs it only from its slash command. No skill runs during installation or merely because a request
-matches its subject matter.
+Harness selects skills automatically when a request matches their description.
+You can also use `/<name>` in Claude Code or `$<name>` in Codex. Claude skills
+allow model invocation; Codex adapters set `policy.allow_implicit_invocation:
+true`. Skill selection grants no new permission to edit, operate, or publish.
+Engineering wisdom still requires the installation opt-in flag.
+
+The shared protocol comes from `scripts/claude-harness-block.md`. Claude skills
+are the authoring source; `python3 scripts/sync-codex-skills.py` renders the
+Codex adapters, and pre-merge validation rejects drift. Onboarding evidence
+validation accepts Claude Code JSONL and Codex `response_item` JSONL with a
+`final_answer` message. `skill-report` remains Claude Code only.
 
 ## What We Prove
 

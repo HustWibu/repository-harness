@@ -13,7 +13,7 @@ understand without adding a parallel control plane.
 
 ## Before Editing
 
-1. Read `CLAUDE.md` and `docs/WORKFLOW.md`.
+1. Read `CLAUDE.md` or `AGENTS.md`, and `docs/WORKFLOW.md`.
 2. Identify the repository authority for externally observable behavior.
 3. Use a durable plan only when the work spans sessions, coordinates people,
    has meaningful dependencies, or needs recovery memory.
@@ -65,3 +65,6 @@ decision.
 
 Protocol v1 and `harness-cli` are end-of-life. Historical fixes belong on a
 pinned historical branch or fork, not in the current product.
+
+Edit skills in `.claude/skills/`, then run `python3 scripts/sync-codex-skills.py`
+to regenerate Codex adapters. Pre-merge validation checks their parity.

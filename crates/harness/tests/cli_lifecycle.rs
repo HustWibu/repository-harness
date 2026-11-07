@@ -34,6 +34,8 @@ fn cli_installs_reports_and_diagnoses_a_fresh_core() {
     assert_eq!(output["operation"], "install");
     assert_eq!(output["applied"], true);
     assert!(root.path().join("CLAUDE.md").is_file());
+    assert!(root.path().join("AGENTS.md").is_file());
+    assert!(root.path().join(".harness-core/base/AGENTS.md").is_file());
     assert!(root.path().join(".harness-core/manifest.json").is_file());
     assert!(root.path().join(".harness-core/base/CLAUDE.md").is_file());
     assert!(!root.path().join("harness.db").exists());

@@ -17,8 +17,7 @@ pub struct MemberCheckout {
     pub hub_from_member: String,
 }
 
-/// The directory holding the hub, whose `CLAUDE.md` Claude Code loads in every
-/// repository below it.
+/// The directory holding the hub and its workspace instruction files.
 #[derive(Clone, Debug)]
 pub struct WorkspaceCheckout {
     pub root: PathBuf,
@@ -49,8 +48,8 @@ pub trait HubWorkspacePort {
         revision: &str,
         path: &str,
     ) -> Result<MemberSource, PortError>;
-    fn read_claude(&self, member: &Path) -> Result<Option<String>, PortError>;
-    fn write_claude(&self, member: &Path, content: &str) -> Result<(), PortError>;
+    fn read_entry(&self, member: &Path, entry: &str) -> Result<Option<String>, PortError>;
+    fn write_entry(&self, member: &Path, entry: &str, content: &str) -> Result<(), PortError>;
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -178,8 +177,8 @@ impl<W: HubWorkspacePort> HubApplication<W> {
         })
     }
 
-    /// Write one block into the workspace directory's `CLAUDE.md` and check
-    /// that every member is a Git root below it; members are not written.
+    /// Write workspace instruction blocks and member Codex pointers, since
+    /// Codex discovery stops at each member Git root.
     pub fn sync_workspace(&self, hub: &Path, mode: HubMode) -> Result<HubReport, HubError> {
         let members = parse_hub_members(&self.workspace.read_hub_map(hub)?)?;
         let workspace = self.workspace.resolve_workspace(hub)?;
@@ -187,7 +186,7 @@ impl<W: HubWorkspacePort> HubApplication<W> {
             .into_iter()
             .map(|member| {
                 let outcome = self
-                    .check_covered(hub, &workspace.root, &member.name, &member.location)
+                    .check_covered(hub, &workspace.root, &member.name, &member.location, mode)
                     .unwrap_or_else(|error| MemberOutcome::Failed(error.to_string()));
                 MemberReport {
                     name: member.name,
@@ -219,7 +218,7 @@ impl<W: HubWorkspacePort> HubApplication<W> {
             members,
             unlisted,
             workspace: Some(WorkspaceReport {
-                path: workspace.root.join("CLAUDE.md").display().to_string(),
+                path: workspace.root.display().to_string(),
                 outcome,
             }),
         })
@@ -287,6 +286,7 @@ impl<W: HubWorkspacePort> HubApplication<W> {
         root: &Path,
         name: &str,
         location: &str,
+        mode: HubMode,
     ) -> Result<MemberOutcome, HubError> {
         if let Some(missing) = self.missing_member_docs(hub, name)? {
             return Ok(missing);
@@ -298,7 +298,19 @@ impl<W: HubWorkspacePort> HubApplication<W> {
                 root.display()
             )));
         }
-        Ok(MemberOutcome::Covered)
+        // Codex starts instruction discovery at the member Git root, so a
+        // parent workspace file alone cannot cover a session launched there.
+        let outcome = self.write_entries(
+            &checkout.root,
+            &render_hub_block(&checkout.hub_from_member, name),
+            mode,
+            &["AGENTS.md"],
+        )?;
+        Ok(if outcome == MemberOutcome::Current {
+            MemberOutcome::Covered
+        } else {
+            outcome
+        })
     }
 
     fn missing_member_docs(
@@ -319,14 +331,33 @@ impl<W: HubWorkspacePort> HubApplication<W> {
         block: &str,
         mode: HubMode,
     ) -> Result<MemberOutcome, HubError> {
-        let existing = self.workspace.read_claude(root)?;
-        let wanted = apply_hub_block(existing.as_deref(), block)?;
-        if existing.as_deref() == Some(wanted.as_str()) {
+        self.write_entries(root, block, mode, &["CLAUDE.md", "AGENTS.md"])
+    }
+
+    fn write_entries(
+        &self,
+        root: &Path,
+        block: &str,
+        mode: HubMode,
+        entries: &[&str],
+    ) -> Result<MemberOutcome, HubError> {
+        // Validate every selected entrypoint before writing any of them.
+        let mut changes = Vec::new();
+        for &entry in entries {
+            let existing = self.workspace.read_entry(root, entry)?;
+            let wanted = apply_hub_block(existing.as_deref(), block)?;
+            if existing.as_deref() != Some(wanted.as_str()) {
+                changes.push((entry, wanted));
+            }
+        }
+        if changes.is_empty() {
             return Ok(MemberOutcome::Current);
         }
         Ok(match mode {
             HubMode::Apply => {
-                self.workspace.write_claude(root, &wanted)?;
+                for (entry, wanted) in changes {
+                    self.workspace.write_entry(root, entry, &wanted)?;
+                }
                 MemberOutcome::Updated
             }
             HubMode::DryRun | HubMode::Check => MemberOutcome::WouldUpdate,
@@ -413,13 +444,23 @@ mod tests {
                 hub_path: "/w/hub".to_owned(),
             })
         }
-        fn read_claude(&self, member: &Path) -> Result<Option<String>, PortError> {
-            Ok(self.claude.borrow().get(member).cloned())
+        fn read_entry(&self, member: &Path, entry: &str) -> Result<Option<String>, PortError> {
+            let key = if entry == "CLAUDE.md" {
+                member.to_path_buf()
+            } else {
+                member.join(entry)
+            };
+            Ok(self.claude.borrow().get(&key).cloned())
         }
-        fn write_claude(&self, member: &Path, content: &str) -> Result<(), PortError> {
-            self.claude
-                .borrow_mut()
-                .insert(member.to_path_buf(), content.to_owned());
+        fn write_entry(&self, member: &Path, entry: &str, content: &str) -> Result<(), PortError> {
+            self.claude.borrow_mut().insert(
+                if entry == "CLAUDE.md" {
+                    member.to_path_buf()
+                } else {
+                    member.join(entry)
+                },
+                content.to_owned(),
+            );
             Ok(())
         }
     }
@@ -476,7 +517,7 @@ mod tests {
         let hub = Path::new("hub");
 
         let check = app.sync_workspace(hub, HubMode::Check).unwrap();
-        assert_eq!(check.members[0].outcome, MemberOutcome::Covered);
+        assert_eq!(check.members[0].outcome, MemberOutcome::WouldUpdate);
         assert!(matches!(check.members[1].outcome, MemberOutcome::Failed(_)));
         assert!(matches!(check.members[2].outcome, MemberOutcome::Failed(_)));
         let workspace = check.workspace.as_ref().unwrap();

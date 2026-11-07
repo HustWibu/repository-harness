@@ -24,7 +24,7 @@ grep -Fq 'Engineering wisdom: excluded' "$temp/default.out"
   "$root/scripts/harness-install-files.txt"
 
 # Cause: explicit advisory flag. Effect: every optional-manifest member is
-# installed, but metadata still requires explicit skill invocation.
+# installed, and relevant requests can select it automatically.
 opt_in_target="$temp/opt-in"
 install --directory "$opt_in_target" --with-engineering-wisdom --yes \
   >"$temp/opt-in.out"
@@ -36,7 +36,7 @@ while IFS= read -r relative || [[ -n "$relative" ]]; do
   esac
   [[ -f "$opt_in_target/$relative" ]]
 done <"$manifest"
-grep -Fxq 'disable-model-invocation: true' \
+! grep -Fxq 'disable-model-invocation: true' \
   "$opt_in_target/.claude/skills/engineering-wisdom/SKILL.md"
 grep -Fq '**Observation:**' \
   "$opt_in_target/.claude/skills/engineering-wisdom/SKILL.md"

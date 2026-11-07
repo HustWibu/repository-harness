@@ -49,9 +49,9 @@ description_max=$(limit_for chars skill-description)
 
 skills=$(cat "$root/scripts/harness-install-files.txt" \
   "$root/scripts/engineering-wisdom-install-files.txt" |
-  grep -E '^\.claude/skills/[^/]+/SKILL\.md$' | LC_ALL=C sort -u)
+  grep -E '^\.(claude|agents)/skills/[^/]+/SKILL\.md$' | LC_ALL=C sort -u)
 for skill in $skills; do
-  max=$(limit_for bytes "$skill")
+  max=$(limit_for bytes "${skill/.agents\//.claude/}")
   max=${max:-$default_skill}
   size=$(wc -c <"$root/$skill" | tr -d ' ')
   (( size <= max )) || fail "$skill is $size bytes; limit is $max" "$why" "$fix_raise"

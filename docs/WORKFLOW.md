@@ -3,7 +3,7 @@
 Repository code, types, module interfaces, executable commands, tests, examples,
 and runtime evidence hold current implementation knowledge. Product intent,
 rationale, and accepted constraints remain with their repository owners.
-Use `docs/README.md` to find the relevant sources; link to existing knowledge
+Use `docs/README.md` when present, otherwise inspect native sources; link to existing knowledge
 rather than reproduce it in a new summary.
 
 ## Authority And Scope
@@ -64,7 +64,9 @@ change.
 
 ## Optional Resources
 
-Only invoke a Harness skill when the user explicitly requests it. Installation
-makes skills available; it does not activate them. Patterns and templates are
-references for requested work. Harness does not classify tasks, require plans,
-route requests to skills, or govern the consumer's workflow.
+Select relevant Harness skills from the requested outcome; names are optional.
+Load only skills that materially help the current task. Skill selection grants
+no additional authority to edit, operate, or publish. Consumer instructions
+own the task workflow; templates and plans remain optional. When a repository
+has no Harness documents, inspect its native instructions, source, and checks
+rather than creating missing context files automatically.

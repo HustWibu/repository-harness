@@ -44,13 +44,16 @@ grep -Fq 'Harness profile: core' "$temp/fresh.out"
 [[ -f "$fresh/docs/patterns/encoding-invariants.md" ]]
 [[ -f "$fresh/.claude/skills/encode-invariant/SKILL.md" ]]
 cmp -s <(extract_block "$fresh/CLAUDE.md") "$root/scripts/claude-harness-block.md"
-grep -Fq 'Only invoke a Harness skill when the user explicitly requests it.' "$fresh/CLAUDE.md"
-[[ ! -e "$fresh/AGENTS.md" && ! -e "$fresh/.agents" ]]
+grep -Fq 'Select relevant Harness skills from the requested outcome; names are optional.' "$fresh/CLAUDE.md"
+cmp -s "$fresh/AGENTS.md" "$fresh/CLAUDE.md"
+[[ -f "$fresh/.agents/skills/encode-invariant/SKILL.md" ]]
+grep -Fxq '  allow_implicit_invocation: true' "$fresh/.agents/skills/encode-invariant/agents/openai.yaml"
+grep -Fq 'Use when implementing an accepted repository rule' "$fresh/.agents/skills/encode-invariant/SKILL.md"
 [[ -z "$(find "$fresh/.claude" -name openai.yaml -print -quit)" ]]
 grep -Fq '## Missing Capabilities' "$fresh/docs/WORKFLOW.md"
 grep -Fq 'Positive proof' "$fresh/docs/patterns/encoding-invariants.md"
 grep -Fq 'Negative proof' "$fresh/docs/patterns/encoding-invariants.md"
-grep -Fq 'Use only when the user explicitly invokes' \
+grep -Fq 'Use when' \
   "$fresh/.claude/skills/encode-invariant/SKILL.md"
 grep -Fq "Reuse the repository's existing test, build, task, lint, scan, or validation" \
   "$fresh/.claude/skills/encode-invariant/SKILL.md"
@@ -67,7 +70,7 @@ for level in \
 done
 grep -Fq 'Compare documented invariants with executable checks' \
   "$fresh/.claude/skills/onboard-repository/SKILL.md"
-grep -Fxq 'disable-model-invocation: true' \
+! grep -Fxq 'disable-model-invocation: true' \
   "$fresh/.claude/skills/encode-invariant/SKILL.md"
 grep -Fxq 'scripts/bin/harness' "$fresh/.gitignore"
 for legacy in \
@@ -87,7 +90,7 @@ wisdom="$temp/wisdom"
 install --directory "$wisdom" --with-engineering-wisdom --yes >"$temp/wisdom.out"
 grep -Fq 'Engineering wisdom: included (explicit opt-in)' "$temp/wisdom.out"
 [[ -f "$wisdom/.claude/skills/engineering-wisdom/SKILL.md" ]]
-grep -Fxq 'disable-model-invocation: true' \
+! grep -Fxq 'disable-model-invocation: true' \
   "$wisdom/.claude/skills/engineering-wisdom/SKILL.md"
 
 # Force still overwrites an opted-in advisory file and backs up its old bytes.
@@ -192,9 +195,18 @@ grep -Fq 'Harness profile: core' "$temp/dry.out"
 assert_rejected_flag --with-cli
 assert_rejected_flag --upgrade-cli
 assert_rejected_flag --ref
-# Removed host switches: CLAUDE.md is the only entrypoint.
+# Redundant old host selector stays rejected; both hosts install by default.
 assert_rejected_flag --claude
-assert_rejected_flag --refresh-agent-shim
+# Codex refresh preserves consumer text and backs up the original.
+agents="$temp/agents"
+mkdir -p "$agents"
+printf '# Local Codex Rules\n' >"$agents/AGENTS.md"
+install --directory "$agents" --merge --refresh-agent-shim --yes >"$temp/agents.out"
+grep -Fxq '# Local Codex Rules' "$agents/AGENTS.md"
+cmp -s <(extract_block "$agents/AGENTS.md") "$root/scripts/claude-harness-block.md"
+[[ "$(grep -Fc '<!-- HARNESS:BEGIN -->' "$agents/AGENTS.md")" == 1 ]]
+agents_backup=$(find "$agents/.harness-backup" -name AGENTS.md -type f | head -n 1)
+grep -Fxq '# Local Codex Rules' "$agents_backup"
 
 # The core executable path still refuses symlink traversal.
 symlink_target="$temp/symlink-target"

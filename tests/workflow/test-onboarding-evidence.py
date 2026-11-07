@@ -84,7 +84,7 @@ class OnboardingEvidenceTests(unittest.TestCase):
             sys.executable, self.validator, "--repository", self.root,
         ], bundle, expected)
 
-    def validate_transcript(self, bundle, expected=0, digest_override=None):
+    def validate_transcript(self, bundle, expected=0, digest_override=None, codex=False, final=True):
         events = [
             {"type": "user", "isSidechain": False, "message": {
                 "role": "user", "content": [{
@@ -96,6 +96,17 @@ class OnboardingEvidenceTests(unittest.TestCase):
                 "content": [{"type": "text", "text": "No backfill proposed."}],
             }},
         ]
+        if codex:
+            events = [
+                {"type": "response_item", "payload": {
+                    "type": "function_call_output", "call_id": "call_1", "output": bundle,
+                }},
+                {"type": "response_item", "payload": {
+                    "type": "message", "role": "assistant",
+                    "phase": "final_answer" if final else "commentary",
+                    "content": [{"type": "output_text", "text": "No backfill proposed."}],
+                }},
+            ]
         raw = "".join(json.dumps(event) + "\n" for event in events).encode()
         digest = hashlib.sha256(raw).hexdigest()
         with tempfile.TemporaryDirectory(prefix="harness-transcript-") as directory:
@@ -182,6 +193,20 @@ class OnboardingEvidenceTests(unittest.TestCase):
         self.validate(bundle)
         self.assertEqual(self.capsule(bundle)["boundary"][2], row)
 
+    def test_codex_transcript_requires_final_answer_and_authenticates_bundle(self):
+        self.emitter = self.root / ".agents/skills/onboard-repository/scripts/emit_evidence_bundle.py"
+        self.validator = self.root / ".agents/skills/audit-onboarding-proposal/scripts/validate_evidence_capsule.py"
+        bundle = self.emit().stdout
+        response, digest = self.validate_transcript(bundle, codex=True)
+        result = json.loads(response.stdout)
+        self.assertEqual(result["transcript_sha256"], digest)
+        self.assertEqual(result["evidence_source"], "machine_tool_output")
+        response, _ = self.validate_transcript(bundle, codex=True, expected=1, digest_override="0" * 64)
+        self.assertIn("transcript SHA-256 mismatch", response.stderr)
+        response, _ = self.validate_transcript(bundle, codex=True, final=False, expected=1)
+        self.assertIn("no completed assistant message", response.stderr)
+        self.assertEqual(self.snapshot(), self.before)
+
     def test_no_backfill_transcript_authentication_still_applies(self):
         bundle = self.emit().stdout
         response, digest = self.validate_transcript(bundle)
@@ -247,42 +272,38 @@ class OnboardingEvidenceTests(unittest.TestCase):
         self.assertIn("v1 claims must be a non-empty array", self.validate(
             message, expected=1).stderr)
 
-    def assert_explicit_skill_policy(self, skill):
+    def assert_automatic_skill_policy(self, skill):
         frontmatter = skill.split("---\n", 2)[1] if skill.startswith("---\n") else ""
-        policy = [line for line in frontmatter.splitlines()
-                  if line.startswith("disable-model-invocation:")]
-        self.assertEqual(len(policy), 1,
-                         "skill must declare exactly one invocation policy")
-        self.assertEqual(policy[0], "disable-model-invocation: true",
-                         "skill must require explicit user invocation")
-        description = next((line for line in skill.splitlines()
+        self.assertNotIn("disable-model-invocation: true", frontmatter,
+                         "skill must allow automatic invocation")
+        description = next((line for line in frontmatter.splitlines()
                             if line.startswith("description: ")), "")
-        self.assertTrue(description.startswith(
-            "description: Use only when the user explicitly invokes"),
-                        "skill description must require explicit invocation")
+        self.assertTrue(description.startswith("description: Use when "),
+                        "skill description must identify a task trigger")
 
-    def test_installed_core_skills_require_explicit_invocation(self):
-        skills = self.root / ".claude/skills"
-        self.assertEqual({path.name for path in skills.iterdir()}, {
-            "onboard-repository", "audit-onboarding-proposal", "improve-harness",
-            "encode-invariant", "survey-system",
-        })
-        for skill in skills.iterdir():
-            with self.subTest(skill=skill.name):
-                self.assert_explicit_skill_policy((skill / "SKILL.md").read_text())
+    def test_installed_core_skills_support_automatic_selection_on_both_hosts(self):
+        for edition in (".claude", ".agents"):
+            skills = self.root / edition / "skills"
+            self.assertEqual({path.name for path in skills.iterdir()}, {
+                "onboard-repository", "audit-onboarding-proposal", "improve-harness",
+                "encode-invariant", "survey-system",
+            })
+            for skill in skills.iterdir():
+                with self.subTest(edition=edition, skill=skill.name):
+                    self.assert_automatic_skill_policy((skill / "SKILL.md").read_text())
+                    if edition == ".agents":
+                        self.assertIn("allow_implicit_invocation: true",
+                                      (skill / "agents/openai.yaml").read_text())
 
-    def test_implicit_invocation_policy_is_rejected(self):
-        skill = ("---\ndescription: Use only when the user explicitly invokes `/example`.\n"
-                 "disable-model-invocation: false\n---\n")
-        with self.assertRaisesRegex(AssertionError, "require explicit user invocation"):
-            self.assert_explicit_skill_policy(skill)
+    def test_manual_only_policy_is_rejected(self):
+        skill = "---\ndescription: Use when reviewing.\ndisable-model-invocation: true\n---\n"
+        with self.assertRaisesRegex(AssertionError, "allow automatic invocation"):
+            self.assert_automatic_skill_policy(skill)
 
-    def test_body_instruction_does_not_replace_explicit_description(self):
-        skill = ("---\ndescription: Use when reviewing code.\n"
-                 "disable-model-invocation: true\n---\n"
-                 "Use only when the user explicitly invokes `/example`.")
-        with self.assertRaisesRegex(AssertionError, "description must require"):
-            self.assert_explicit_skill_policy(skill)
+    def test_automatic_skills_need_a_task_trigger_description(self):
+        skill = "---\nname: example\ndescription: Only run by slash command.\n---\n"
+        with self.assertRaisesRegex(AssertionError, "identify a task trigger"):
+            self.assert_automatic_skill_policy(skill)
 
     def test_installed_context_has_no_forced_task_routing(self):
         context = "\n".join((self.root / path).read_text() for path in (
@@ -297,7 +318,7 @@ class OnboardingEvidenceTests(unittest.TestCase):
             with self.subTest(removed=removed):
                 self.assertTrue(removed not in context, f"context must not force: {removed}")
         self.assertIn("missing capabilities", context)
-        self.assertIn("Only invoke a Harness skill when the user explicitly requests it", context)
+        self.assertIn("Select relevant Harness skills from the requested outcome; names are optional.", context)
         self.assertEqual({path.name for path in (self.root / "docs/plans/active").iterdir()},
                          {"README.md"})
         self.assertFalse((self.root / "harness.db").exists())

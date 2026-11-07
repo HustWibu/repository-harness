@@ -9,10 +9,16 @@ pub struct EmbeddedCoreDistribution;
 impl CoreDistributionPort for EmbeddedCoreDistribution {
     fn current(&self) -> Result<CoreDistribution, PortError> {
         let mut files = Vec::new();
+        add(
+            &mut files,
+            "scripts/register-global-harness.py",
+            include_bytes!("../../../../scripts/register-global-harness.py"),
+        )?;
         let claude_block = include_bytes!("../../../../scripts/claude-harness-block.md");
         let mut claude = b"# Project Rules\n\n".to_vec();
         claude.extend_from_slice(claude_block);
         add(&mut files, "CLAUDE.md", &claude)?;
+        add(&mut files, "AGENTS.md", &claude)?;
         add(
             &mut files,
             ".claude/skills/audit-onboarding-proposal/SKILL.md",
@@ -99,6 +105,114 @@ impl CoreDistributionPort for EmbeddedCoreDistribution {
             &mut files,
             ".claude/skills/survey-system/scripts/check_pages.py",
             include_bytes!("../../../../.claude/skills/survey-system/scripts/check_pages.py"),
+        )?;
+        add(
+            &mut files,
+            ".agents/skills/audit-onboarding-proposal/SKILL.md",
+            include_bytes!("../../../../.agents/skills/audit-onboarding-proposal/SKILL.md"),
+        )?;
+        add(
+            &mut files,
+            ".agents/skills/audit-onboarding-proposal/agents/openai.yaml",
+            include_bytes!(
+                "../../../../.agents/skills/audit-onboarding-proposal/agents/openai.yaml"
+            ),
+        )?;
+        add(&mut files, ".agents/skills/audit-onboarding-proposal/scripts/validate_evidence_capsule.py", include_bytes!("../../../../.agents/skills/audit-onboarding-proposal/scripts/validate_evidence_capsule.py"))?;
+        add(
+            &mut files,
+            ".agents/skills/encode-invariant/SKILL.md",
+            include_bytes!("../../../../.agents/skills/encode-invariant/SKILL.md"),
+        )?;
+        add(
+            &mut files,
+            ".agents/skills/encode-invariant/agents/openai.yaml",
+            include_bytes!("../../../../.agents/skills/encode-invariant/agents/openai.yaml"),
+        )?;
+        add(
+            &mut files,
+            ".agents/skills/improve-harness/SKILL.md",
+            include_bytes!("../../../../.agents/skills/improve-harness/SKILL.md"),
+        )?;
+        add(
+            &mut files,
+            ".agents/skills/improve-harness/agents/openai.yaml",
+            include_bytes!("../../../../.agents/skills/improve-harness/agents/openai.yaml"),
+        )?;
+        add(
+            &mut files,
+            ".agents/skills/onboard-repository/SKILL.md",
+            include_bytes!("../../../../.agents/skills/onboard-repository/SKILL.md"),
+        )?;
+        add(
+            &mut files,
+            ".agents/skills/onboard-repository/agents/openai.yaml",
+            include_bytes!("../../../../.agents/skills/onboard-repository/agents/openai.yaml"),
+        )?;
+        add(
+            &mut files,
+            ".agents/skills/onboard-repository/references/boundary-edges.md",
+            include_bytes!(
+                "../../../../.agents/skills/onboard-repository/references/boundary-edges.md"
+            ),
+        )?;
+        add(
+            &mut files,
+            ".agents/skills/onboard-repository/references/evidence-capsule-v1.md",
+            include_bytes!(
+                "../../../../.agents/skills/onboard-repository/references/evidence-capsule-v1.md"
+            ),
+        )?;
+        add(
+            &mut files,
+            ".agents/skills/onboard-repository/references/evidence-capsule-v2.md",
+            include_bytes!(
+                "../../../../.agents/skills/onboard-repository/references/evidence-capsule-v2.md"
+            ),
+        )?;
+        add(
+            &mut files,
+            ".agents/skills/onboard-repository/references/untracked-install.md",
+            include_bytes!(
+                "../../../../.agents/skills/onboard-repository/references/untracked-install.md"
+            ),
+        )?;
+        add(
+            &mut files,
+            ".agents/skills/onboard-repository/scripts/emit_evidence_bundle.py",
+            include_bytes!(
+                "../../../../.agents/skills/onboard-repository/scripts/emit_evidence_bundle.py"
+            ),
+        )?;
+        add(
+            &mut files,
+            ".agents/skills/onboard-repository/scripts/render_patch.py",
+            include_bytes!("../../../../.agents/skills/onboard-repository/scripts/render_patch.py"),
+        )?;
+        add(
+            &mut files,
+            ".agents/skills/survey-system/SKILL.md",
+            include_bytes!("../../../../.agents/skills/survey-system/SKILL.md"),
+        )?;
+        add(
+            &mut files,
+            ".agents/skills/survey-system/agents/openai.yaml",
+            include_bytes!("../../../../.agents/skills/survey-system/agents/openai.yaml"),
+        )?;
+        add(
+            &mut files,
+            ".agents/skills/survey-system/references/page-shapes.md",
+            include_bytes!("../../../../.agents/skills/survey-system/references/page-shapes.md"),
+        )?;
+        add(
+            &mut files,
+            ".agents/skills/survey-system/scripts/check_pages.py",
+            include_bytes!("../../../../.agents/skills/survey-system/scripts/check_pages.py"),
+        )?;
+        add(
+            &mut files,
+            ".agents/skills/survey-system/scripts/pin_sources.py",
+            include_bytes!("../../../../.agents/skills/survey-system/scripts/pin_sources.py"),
         )?;
         add(
             &mut files,
@@ -224,9 +338,9 @@ mod tests {
             .find(|file| file.path.as_str() == "CLAUDE.md")
             .unwrap();
         let claude = String::from_utf8(claude.content.clone()).unwrap();
-        assert!(
-            claude.contains("Only invoke a Harness skill when the user explicitly requests it.")
-        );
+        assert!(claude.contains(
+            "Select relevant Harness skills from the requested outcome; names are optional."
+        ));
         assert!(!claude.contains("AGENTS.md"));
         assert!(!claude.contains("Current Upstream Goal"));
         let plans = distribution
@@ -263,7 +377,7 @@ mod tests {
                 .unwrap();
             let skill = String::from_utf8_lossy(&skill.content);
             assert!(skill.contains("authorized") || skill.contains("read-only"));
-            assert!(skill.contains("\ndisable-model-invocation: true\n"));
+            assert!(!skill.contains("\ndisable-model-invocation: true\n"));
         }
     }
 }

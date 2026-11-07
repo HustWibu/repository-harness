@@ -79,12 +79,12 @@ def pinned_blob(repository: Path, revision: str, destination: str) -> bytes:
 def self_test() -> None:
     before = b"# Project Rules\n\nConsumer-owned line.\n\n<!-- HARNESS:BEGIN -->\nold\n<!-- HARNESS:END -->\n"
     after = b"# Project Rules\n\nConsumer-owned line.\n\n<!-- HARNESS:BEGIN -->\nnew\n<!-- HARNESS:END -->\n"
-    patch = render_patch(before, after, "CLAUDE.md")
+    patch = render_patch(before, after, "docs/example.md")
     require(" Consumer-owned line.\n" in patch, "self-test lost consumer-owned context")
     require("-old\n+new\n" in patch, "self-test did not render the replacement")
     require(
         sha256_bytes(patch.encode("utf-8"))
-        == "04e91cfec8e7a2c0b2658c1c7d39f89cc55ebf288ee6c279c578990b89991899",
+        == "b0984aa6f970270b0a66015a1266d18b2febdd012138b4ae3f8d92b3d3b91694",
         "self-test patch digest changed",
     )
 

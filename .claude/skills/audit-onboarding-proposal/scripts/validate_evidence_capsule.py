@@ -2,7 +2,7 @@
 """Extract and structurally validate an onboarding evidence capsule.
 
 The validator is intentionally read-only and uses only the Python standard
-library. It authenticates a Claude Code session JSONL transcript when
+library. It authenticates a Claude Code or Codex session JSONL transcript when
 requested, extracts the last completed assistant message, and validates the
 capsule schema. For v2 it
 also verifies pinned Git blobs and applies each marked patch in memory to check
@@ -551,6 +551,22 @@ def transcript_message(
         except json.JSONDecodeError as exc:
             raise CapsuleError(f"transcript line {line_number} is invalid JSON: {exc}") from exc
         if not isinstance(event, dict) or event.get("isSidechain") is True:
+            continue
+        if event.get("type") == "response_item":
+            payload = event.get("payload", {})
+            if not isinstance(payload, dict):
+                continue
+            if payload.get("type") == "message" and payload.get("role") == "assistant":
+                text = "".join(
+                    item.get("text", "") for item in payload.get("content", [])
+                    if isinstance(item, dict) and item.get("type") == "output_text"
+                )
+                if text and payload.get("phase") == "final_answer":
+                    completed.append((line_number, text))
+            if payload.get("type") == "function_call_output":
+                output = payload.get("output")
+                if isinstance(output, str) and (BUNDLE_BEGIN_RE.search(output) or BUNDLE_END in output):
+                    machine_outputs.append((line_number, output))
             continue
         message = event.get("message")
         if not isinstance(message, dict):

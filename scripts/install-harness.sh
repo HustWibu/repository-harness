@@ -8,6 +8,8 @@ Usage: install-harness.sh [options] [path]
 Bootstrap the Rust `harness` CLI and install the Harness core into a target.
 
 Options:
+      --global           Install once for all projects in Claude Code and Codex.
+      --remove-global    Remove global registration; keep the installed core.
   -d, --directory <path>  Target directory. Defaults to the current directory.
   -y, --yes              Accept defaults and skip prompts.
       --with-engineering-wisdom
@@ -15,12 +17,14 @@ Options:
                          skill. It is excluded from the default core.
       --merge            On protected-path conflict, keep existing files in
                          place and install only missing Harness files.
+      --refresh-agent-shim
+                         Append or refresh the Harness block in AGENTS.md.
       --refresh-claude-shim
                          Add or refresh the marked Harness block in an
                          existing CLAUDE.md after backing it up. Text outside
                          the block is kept; a stale block is replaced in place.
       --override         On protected-path conflict, back up and replace
-                         CLAUDE.md and docs/.
+                         CLAUDE.md, AGENTS.md and docs/.
       --force            Overwrite existing files after backing them up.
       --local-only       Keep the install out of git status: list every
                          installed path in the target's .git/info/exclude.
@@ -35,7 +39,7 @@ Options:
 Safety:
   The installer installs the repository-centered core plus the Rust
   maintenance CLI. It performs no compatibility CLI or SQLite/control-plane
-  download and no database write. If CLAUDE.md or docs/ already exist,
+  download and no database write. If CLAUDE.md, AGENTS.md or docs/ already exist,
   interactive installs ask
   whether to merge missing files, override after backup, or stop. Merge is the
   safe update path for repositories that already have Harness: existing files
@@ -43,8 +47,8 @@ Safety:
   interactive installs stop unless --merge or --override is provided. If a
   target .gitignore receives only the Rust maintenance binary rules.
   With --local-only, .gitignore is left alone and tracked files such as a
-  committed CLAUDE.md are skipped; --refresh-claude-shim still edits a tracked
-  CLAUDE.md and warns that the change shows in git status. Later installs and
+  committed instruction file are skipped; either refresh flag still edits its
+  tracked instruction file and warns that the change shows in git status. Later installs and
   harness update keep the exclude block current.
 
 Examples:
@@ -234,35 +238,39 @@ validate_harness_markers() {
   [ "$begin_line" -lt "$end_line" ] || fail "$label Harness markers are out of order"
 }
 
-backup_claude_file() {
-  local target="$TARGET_DIR/CLAUDE.md"
+backup_entry_file() {
+  local entry="$1"
+  local target="$TARGET_DIR/$entry"
 
   [ -e "$target" ] || return 0
   mkdir -p "$BACKUP_DIR"
-  [ -e "$BACKUP_DIR/CLAUDE.md" ] && return 0
-  cp -p "$target" "$BACKUP_DIR/CLAUDE.md"
+  [ -e "$BACKUP_DIR/$entry" ] && return 0
+  cp -p "$target" "$BACKUP_DIR/$entry"
 }
 
-refresh_claude_shim() {
-  local target="$TARGET_DIR/CLAUDE.md"
+refresh_entry_shim() {
+  local entry="$1"
+  local target="$TARGET_DIR/$entry"
+  local refresh="$2" flag="$3"
   local block_tmp tmp
 
-  if [ "$REFRESH_CLAUDE_SHIM" -eq 0 ]; then
+  if [ "$refresh" -eq 0 ]; then
     if [ -f "$target" ] && ! grep -Fq "<!-- HARNESS:BEGIN -->" "$target"; then
-      log "note     CLAUDE.md has no Harness block; rerun with --refresh-claude-shim to add it"
+      log "note     $entry has no Harness block; rerun with $flag to add it"
     fi
     return 0
   fi
 
   if [ "$SOURCE_MODE" = "local" ] && [ -e "$target" ] &&
-     [ "$SOURCE_ROOT/CLAUDE.md" -ef "$target" ]; then
-    log "skip     CLAUDE.md (source file)"
+     [ "$SOURCE_ROOT/$entry" -ef "$target" ]; then
+    log "skip     $entry (source file)"
     SKIPPED=$((SKIPPED + 1))
     return 0
   fi
 
+  [ ! -L "$target" ] || fail "refusing symlink for $entry"
   if [ -e "$target" ]; then
-    validate_harness_markers "$target" "CLAUDE.md"
+    validate_harness_markers "$target" "$entry"
   fi
 
   block_tmp="$(mktemp)"
@@ -279,7 +287,7 @@ refresh_claude_shim() {
       /<!-- HARNESS:END -->/ { in_block = 0 }
     ' "$target" > "$current_tmp"
     if cmp -s "$current_tmp" "$block_tmp"; then
-      log "skip     CLAUDE.md (Harness block current)"
+      log "skip     $entry (Harness block current)"
       SKIPPED=$((SKIPPED + 1))
       rm -f "$current_tmp" "$block_tmp"
       return 0
@@ -287,9 +295,9 @@ refresh_claude_shim() {
     rm -f "$current_tmp"
 
     if [ "$DRY_RUN" -eq 1 ]; then
-      log "update   CLAUDE.md (refresh marked Harness block, backup first)"
+      log "update   $entry (refresh marked Harness block, backup first)"
     else
-      backup_claude_file
+      backup_entry_file "$entry"
       tmp="$(mktemp)"
       awk '
         /<!-- HARNESS:BEGIN -->/ {
@@ -306,19 +314,19 @@ refresh_claude_shim() {
         !in_block { print }
       ' block_file="$block_tmp" "$target" > "$tmp"
       mv "$tmp" "$target"
-      log "updated  CLAUDE.md (refreshed Harness block; backup: ${BACKUP_DIR#$TARGET_DIR/}/CLAUDE.md)"
+      log "updated  $entry (refreshed Harness block; backup: ${BACKUP_DIR#$TARGET_DIR/}/$entry)"
     fi
     UPDATED=$((UPDATED + 1))
   elif [ -e "$target" ]; then
     if [ "$DRY_RUN" -eq 1 ]; then
-      log "update   CLAUDE.md (append Harness block, backup first)"
+      log "update   $entry (append Harness block, backup first)"
     else
-      backup_claude_file
+      backup_entry_file "$entry"
       {
         printf '\n'
         cat "$block_tmp"
       } >> "$target"
-      log "updated  CLAUDE.md (appended Harness block; backup: ${BACKUP_DIR#$TARGET_DIR/}/CLAUDE.md)"
+      log "updated  $entry (appended Harness block; backup: ${BACKUP_DIR#$TARGET_DIR/}/$entry)"
     fi
     UPDATED=$((UPDATED + 1))
   fi
@@ -508,6 +516,7 @@ check_protected_target_paths() {
   local conflicts=()
 
   [ -e "$TARGET_DIR/CLAUDE.md" ] && conflicts+=("CLAUDE.md")
+  [ -e "$TARGET_DIR/AGENTS.md" ] && conflicts+=("AGENTS.md")
   [ -e "$TARGET_DIR/docs" ] && conflicts+=("docs/")
   [ "${#conflicts[@]}" -gt 0 ] || return 0
 
@@ -545,7 +554,7 @@ check_protected_target_paths() {
     printf 'Warning: target already contains protected Harness paths: %s\n' "$joined"
     printf 'Choose how to continue:\n'
     printf '  1. Merge    Copy missing Harness files and skip existing files\n'
-    printf '  2. Override Back up and replace CLAUDE.md and docs/\n'
+    printf '  2. Override Back up and replace CLAUDE.md, AGENTS.md and docs/\n'
     printf '  3. Stop     Exit without writing files (recommended)\n'
   } > /dev/tty
   prompt_tty 'Choice [1/2/3, default 3]: '
@@ -573,7 +582,7 @@ check_protected_target_paths() {
 override_protected_target_paths() {
   local protected
 
-  for protected in CLAUDE.md docs; do
+  for protected in CLAUDE.md AGENTS.md docs; do
     [ -e "$TARGET_DIR/$protected" ] || continue
 
     if [ "$DRY_RUN" -eq 1 ]; then
@@ -670,12 +679,16 @@ install_engineering_wisdom() {
   copy_manifest_files "$ENGINEERING_WISDOM_PAYLOAD_MANIFEST"
 }
 
+GLOBAL_INSTALL=0
+REMOVE_GLOBAL=0
+DIRECTORY_GIVEN=0
 TARGET_INPUT="${HARNESS_TARGET_DIR:-$PWD}"
 YES=0
 FORCE=0
 DRY_RUN=0
 INSTALL_ENGINEERING_WISDOM=0
 REFRESH_CLAUDE_SHIM=0
+REFRESH_AGENT_SHIM=0
 LOCAL_ONLY=0
 REMOVE_LOCAL_ONLY=0
 LOCAL_ONLY_BEGIN="# BEGIN harness local-only (managed by harness; do not edit)"
@@ -687,11 +700,21 @@ while [ "$#" -gt 0 ]; do
   case "$1" in
     -d|--directory)
       [ "$#" -ge 2 ] || fail "$1 requires a path"
+      DIRECTORY_GIVEN=1
       TARGET_INPUT="$2"
       shift 2
       ;;
     -y|--yes)
       YES=1
+      shift
+      ;;
+    --global)
+      GLOBAL_INSTALL=1
+      shift
+      ;;
+    --remove-global)
+      REMOVE_GLOBAL=1
+      GLOBAL_INSTALL=1
       shift
       ;;
     --with-engineering-wisdom)
@@ -704,6 +727,10 @@ while [ "$#" -gt 0 ]; do
       ;;
     --merge)
       REQUESTED_CONFLICT_ACTION="merge"
+      shift
+      ;;
+    --refresh-agent-shim)
+      REFRESH_AGENT_SHIM=1
       shift
       ;;
     --refresh-claude-shim)
@@ -777,7 +804,53 @@ if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/../CLAUDE.md" ] && [ -f "$SCRIPT_DI
   SOURCE_MODE="local"
 fi
 
-if [ "$YES" -eq 0 ] && [ "$REMOVE_LOCAL_ONLY" -eq 0 ] && can_prompt; then
+register_global_harness() {
+  local registrar status
+  local args=(--root "$TARGET_DIR" --home "${HARNESS_GLOBAL_HOME:-$HOME}")
+  local skills=() name
+  while IFS= read -r name; do
+    [ -n "$name" ] && skills+=("$name")
+  done < <({
+    read_payload_manifest "$PAYLOAD_MANIFEST"
+    if [ "$INSTALL_ENGINEERING_WISDOM" -eq 1 ]; then
+      read_payload_manifest "$ENGINEERING_WISDOM_PAYLOAD_MANIFEST"
+    fi
+  } | sed -n 's#^\.claude/skills/\([^/]*\)/SKILL.md$#\1#p')
+  args+=(--skills "${skills[@]}")
+  registrar="$(mktemp)"
+  if [ "$1" = "--apply" ]; then
+    [ -f "$TARGET_DIR/scripts/register-global-harness.py" ] || fail "candidate core lacks global support; build this checkout or publish a supporting release first"
+    cp "$TARGET_DIR/scripts/register-global-harness.py" "$registrar"
+  else
+    read_source_text "scripts/register-global-harness.py" > "$registrar"
+  fi
+  [ "$1" = "--apply" ] || args+=("$1")
+  [ "$DRY_RUN" -eq 0 ] || args+=(--dry-run)
+  status=0
+  python3 "$registrar" "${args[@]}" || status=$?
+  rm -f "$registrar"
+  [ "$status" -eq 0 ] || fail "global Harness registration failed (exit $status)"
+}
+
+if [ "$GLOBAL_INSTALL" -eq 1 ]; then
+  command -v python3 >/dev/null 2>&1 || fail "python3 is required for global installation"
+  [ "$DIRECTORY_GIVEN" -eq 0 ] && [ -z "$POSITIONAL_TARGET" ] || fail "--global does not accept a repository directory"
+  [ "$LOCAL_ONLY" -eq 0 ] && [ "$REMOVE_LOCAL_ONLY" -eq 0 ] || fail "global and local-only modes cannot be combined"
+  [ "$FORCE" -eq 0 ] && [ "$REQUESTED_CONFLICT_ACTION" != "override" ] || fail "global installation preserves user configuration; --force/--override are unavailable"
+  TARGET_INPUT="${HARNESS_GLOBAL_ROOT:-${XDG_DATA_HOME:-${HARNESS_GLOBAL_HOME:-$HOME}/.local/share}/repository-harness}"
+  TARGET_DIR="$(expand_path "$TARGET_INPUT")"
+  REQUESTED_CONFLICT_ACTION="merge"
+  if [ "$REMOVE_GLOBAL" -eq 1 ]; then
+    register_global_harness --remove
+    exit 0
+  fi
+  register_global_harness --preflight
+  if [ "$DRY_RUN" -eq 0 ]; then
+    mkdir -p "$(dirname "$TARGET_DIR")"
+  fi
+fi
+
+if [ "$GLOBAL_INSTALL" -eq 0 ] && [ "$YES" -eq 0 ] && [ "$REMOVE_LOCAL_ONLY" -eq 0 ] && can_prompt; then
   prompt_tty "Install Harness v0 into [$TARGET_INPUT]: "
   REPLY_TARGET="$(read_tty)"
   if [ -n "$REPLY_TARGET" ]; then
@@ -785,7 +858,9 @@ if [ "$YES" -eq 0 ] && [ "$REMOVE_LOCAL_ONLY" -eq 0 ] && can_prompt; then
   fi
 fi
 
-TARGET_DIR="$(make_absolute_parent "$(expand_path "$TARGET_INPUT")")"
+if [ "$GLOBAL_INSTALL" -eq 0 ]; then
+  TARGET_DIR="$(make_absolute_parent "$(expand_path "$TARGET_INPUT")")"
+fi
 
 if [ "$REMOVE_LOCAL_ONLY" -eq 1 ]; then
   [ "$LOCAL_ONLY" -eq 0 ] || fail "--local-only and --remove-local-only cannot be combined"
@@ -824,7 +899,7 @@ fi
 if [ -d "$TARGET_DIR" ]; then
   [ -w "$TARGET_DIR" ] || fail "Target directory is not writable: $TARGET_DIR"
 else
-  [ -w "$(dirname "$TARGET_DIR")" ] || fail "Target parent directory is not writable: $(dirname "$TARGET_DIR")"
+  [ "$GLOBAL_INSTALL" -eq 1 ] || [ -w "$(dirname "$TARGET_DIR")" ] || fail "Target parent directory is not writable: $(dirname "$TARGET_DIR")"
 fi
 
 if [ -d "$TARGET_DIR" ]; then
@@ -853,12 +928,18 @@ fi
 install_harness_core
 
 install_engineering_wisdom
-refresh_claude_shim
-if [ "$LOCAL_ONLY" -eq 1 ] && [ "$REFRESH_CLAUDE_SHIM" -eq 1 ] && [ "$DRY_RUN" -eq 0 ] &&
-   git -C "$TARGET_DIR" ls-files --error-unmatch CLAUDE.md >/dev/null 2>&1 &&
-   ! git -C "$TARGET_DIR" diff --quiet -- CLAUDE.md; then
-  log "warning  CLAUDE.md is tracked; the Harness block change shows in git status"
+if [ "$GLOBAL_INSTALL" -eq 1 ] && [ "$DRY_RUN" -eq 0 ]; then
+  register_global_harness --apply
 fi
+refresh_entry_shim CLAUDE.md "$REFRESH_CLAUDE_SHIM" --refresh-claude-shim
+refresh_entry_shim AGENTS.md "$REFRESH_AGENT_SHIM" --refresh-agent-shim
+for entry in CLAUDE.md AGENTS.md; do
+  if [ "$LOCAL_ONLY" -eq 1 ] && [ "$DRY_RUN" -eq 0 ] &&
+     git -C "$TARGET_DIR" ls-files --error-unmatch "$entry" >/dev/null 2>&1 &&
+     ! git -C "$TARGET_DIR" diff --quiet -- "$entry"; then
+    log "warning  $entry is tracked; the Harness block change shows in git status"
+  fi
+done
 
 log ""
 log "Done. Created: $CREATED, updated: $UPDATED, skipped: $SKIPPED."

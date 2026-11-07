@@ -170,7 +170,7 @@ pub fn apply_hub_block(existing: Option<&str>, block: &str) -> Result<String, Hu
             Ok(format!("{}{block}{after}", &existing[..start]))
         }
         _ => Err(HubMapError(
-            "CLAUDE.md must contain exactly one complete hub marker pair".to_owned(),
+            "instruction file must contain exactly one complete hub marker pair".to_owned(),
         )),
     }
 }
